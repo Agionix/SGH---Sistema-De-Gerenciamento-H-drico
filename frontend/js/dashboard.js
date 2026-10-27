@@ -11,10 +11,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnBackup = document.getElementById('btnBackup');
   const btnOpenSettings = document.getElementById('btnOpenSettings');
 
-  // Banner de Simulação
+  // Banner de Simulação & Modo Demonstração
   const simulationBanner = document.getElementById('simulationBanner');
   const simScenarioSelect = document.getElementById('simScenarioSelect');
   const btnToggleSim = document.getElementById('btnToggleSim');
+  const btnSimTestAlert = document.getElementById('btnSimTestAlert');
+  const btnSimPulse = document.getElementById('btnSimPulse');
+  const btnExitDemoMode = document.getElementById('btnExitDemoMode');
 
   // Elementos dos Cards
   const valFlow = document.getElementById('valFlow');
@@ -566,19 +569,61 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ============================================================================
-  // 6. CONTROLE DE SIMULAÇÃO
+  // 6. CONTROLE DE SIMULAÇÃO & MODO DEMONSTRAÇÃO
   // ============================================================================
   simScenarioSelect?.addEventListener('change', async () => {
-    await SghApi.setSimulationScenario(simScenarioSelect.value);
+    const selected = simScenarioSelect.value;
+    await SghApi.setSimulationScenario(selected);
+    showToast(`Cenário simulado alterado para: ${selected.replace('_', ' ')}`, 'info');
     fetchStatus();
   });
 
   btnToggleSim?.addEventListener('click', async () => {
     const res = await SghApi.toggleSimulation();
     if (res && res.sucesso) {
+      btnToggleSim.textContent = res.simulacaoAtiva ? 'Pausar Simulação' : 'Retomar Simulação';
+      showToast(res.simulacaoAtiva ? 'Simulação em execução.' : 'Simulação pausada.', 'info');
       fetchStatus();
       loadHistory(1);
     }
+  });
+
+  // Disparar Alerta Simulado em Tempo Real
+  btnSimTestAlert?.addEventListener('click', async () => {
+    btnSimTestAlert.disabled = true;
+    try {
+      showToast('Disparando alerta de teste simulado...', 'info');
+      await SghApi.triggerTestAlert('vazamento');
+      showToast('Alerta simulado gerado! Inspecione a Central de Alertas.', 'danger');
+      await loadAlerts();
+      await fetchStatus();
+    } catch (err) {
+      showToast('Aviso ao disparar alerta: ' + err.message, 'warning');
+    } finally {
+      setTimeout(() => { btnSimTestAlert.disabled = false; }, 800);
+    }
+  });
+
+  // Injetar Pulso de Vazão Rápido
+  btnSimPulse?.addEventListener('click', async () => {
+    btnSimPulse.disabled = true;
+    try {
+      showToast('Pulso de vazão (+5L) injetado na simulação!', 'info');
+      await SghApi.injectFlowPulse(5.0);
+      await fetchStatus();
+      await loadHistory(1);
+    } catch (err) {
+      showToast('Aviso ao injetar pulso: ' + err.message, 'warning');
+    } finally {
+      setTimeout(() => { btnSimPulse.disabled = false; }, 1000);
+    }
+  });
+
+  // Sair do Modo Demonstração
+  btnExitDemoMode?.addEventListener('click', async () => {
+    showToast('Encerrando demonstração...', 'info');
+    await SghApi.exitDemoMode();
+    window.location.replace('/login.html?exit_demo=true');
   });
 
   // Notificação toast moderna (sem usar window.alert/window.confirm bloqueados em iframes)
@@ -653,12 +698,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       btnLogout.setAttribute('disabled', 'true');
       btnLogout.style.opacity = '0.5';
-      await SghApi.logout();
+      if (SghApi.isDemoMode()) {
+        await SghApi.exitDemoMode();
+      } else {
+        await SghApi.logout();
+      }
     } catch (err) {
       console.warn('Erro na requisição de logout:', err);
     } finally {
       sessionStorage.removeItem('sgh_session_token');
-      window.location.replace('/login.html');
+      sessionStorage.removeItem('sgh_demo_mode');
+      window.location.replace('/login.html?exit_demo=true');
     }
   });
 
@@ -1010,8 +1060,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ============================================================================
-  // INICIALIZAÇÃO
+  // INICIALIZAÇÃO E IDENTIFICAÇÃO DE SESSÃO / MODO DEMO
   // ============================================================================
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDemoUrl = urlParams.get('demo') === 'true';
+  const isDemoStorage = SghApi.isDemoMode();
+
+  if (isDemoUrl || isDemoStorage) {
+    sessionStorage.setItem('sgh_demo_mode', 'true');
+    if (userNameBadge) {
+      userNameBadge.innerHTML = '<span style="color:#38bdf8; font-weight:600; display:inline-flex; align-items:center; gap:0.35rem;"><span style="width:7px; height:7px; border-radius:50%; background:#38bdf8; display:inline-block; box-shadow:0 0 6px #38bdf8;"></span>Visitante (Demo)</span>';
+    }
+    if (simulationBanner) {
+      simulationBanner.style.display = 'flex';
+    }
+    SghApi.setSimulationScenario(simScenarioSelect ? simScenarioSelect.value : 'torneira').catch(() => {});
+  } else {
+    try {
+      const sess = await SghApi.checkSession();
+      if (sess && sess.autenticado && sess.usuario) {
+        if (sess.usuario.role === 'demo') {
+          sessionStorage.setItem('sgh_demo_mode', 'true');
+          if (userNameBadge) {
+            userNameBadge.innerHTML = '<span style="color:#38bdf8; font-weight:600;">Visitante (Demo)</span>';
+          }
+          if (simulationBanner) simulationBanner.style.display = 'flex';
+        } else if (userNameBadge) {
+          userNameBadge.textContent = sess.usuario.username || 'Operador';
+        }
+      }
+    } catch {}
+  }
+
   initChart();
   startPolling();
   loadAlerts();
@@ -1020,3 +1100,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(loadAlerts, 5000);
   setInterval(loadAvailableDevices, 8000);
 });
+

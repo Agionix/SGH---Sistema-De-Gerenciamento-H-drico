@@ -70,16 +70,18 @@
     </div>
   </header>
 
-  <!-- Banner de Modo de Simulação Ativo -->
+  <!-- Barra de Modo de Simulação & Demonstração Interativa -->
   <div id="simulationBanner" class="simulation-banner" style="display: none;">
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-      </svg>
-      <strong>[MODO DE SIMULAÇÃO ATIVO]</strong> — Dados sintéticos gerados para testes funcionais sem hardware.
+    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+      <span class="status-dot connected" style="background-color: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span>
+      <strong style="color: #38bdf8; letter-spacing: 0.03em;">[MODO DEMONSTRAÇÃO ATIVO]</strong>
+      <span class="sim-banner-desc" style="font-size: 0.8rem; color: var(--text-muted);">
+        Telemetria hidráulica gerada em tempo real para testes e apresentação sem hardware físico.
+      </span>
     </div>
-    <div class="simulation-controls">
-      <label for="simScenarioSelect" style="font-size: 0.75rem;">Cenário:</label>
+
+    <div class="simulation-controls" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+      <label for="simScenarioSelect" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main);">Cenário:</label>
       <select id="simScenarioSelect" class="sim-select" aria-label="Selecione o cenário de simulação">
         <option value="repouso">Repouso (0 L/min)</option>
         <option value="torneira">Torneira de Pia (~4.5 L/min)</option>
@@ -87,8 +89,35 @@
         <option value="vazamento_leve">Vazamento Contínuo (~0.85 L/min)</option>
         <option value="ruptura_grave">Ruptura Grave (>35 L/min)</option>
       </select>
-      <button id="btnToggleSim" class="btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-        Alternar para Hardware Real
+
+      <!-- Ações Rápidas de Demonstração -->
+      <button type="button" id="btnSimTestAlert" class="btn-secondary" title="Gera um alerta de vazamento simulado instantâneo" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171; display: inline-flex; align-items: center; gap: 0.3rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        Simular Alerta
+      </button>
+
+      <button type="button" id="btnSimPulse" class="btn-secondary" title="Injeta um pulso rápido de vazão para ver a curva oscilar no gráfico" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(6, 182, 212, 0.5); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.3rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        Injetar Pulso (+5L)
+      </button>
+
+      <button type="button" id="btnToggleSim" class="btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+        Pausar Simulação
+      </button>
+
+      <button type="button" id="btnExitDemoMode" class="btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; display: inline-flex; align-items: center; gap: 0.3rem;" title="Encerra a sessão de demonstração e retorna à tela de login">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Sair da Demo
       </button>
     </div>
   </div>

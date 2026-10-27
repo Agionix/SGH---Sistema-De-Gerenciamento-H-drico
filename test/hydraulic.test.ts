@@ -365,5 +365,48 @@ test('listAvailablePorts() executa com resiliência sem lançar spawn udevadm EN
   assert.ok(Array.isArray(status.dispositivosDisponiveis));
 });
 
+// ==============================================================================
+// 12. TESTES DO MODO DEMONSTRAÇÃO & SIMULAÇÃO
+// ==============================================================================
+test('Criação e autenticação de sessão do Modo Demonstração', () => {
+  const demoUser = { id: 9999, username: 'Visitante (Demo)', role: 'demo' };
+  const token = createSession(demoUser);
+  assert.ok(token, 'Token demo deve ser gerado');
+
+  const session = validateSession(token);
+  assert.ok(session, 'Sessão demo deve ser validada com sucesso');
+  assert.equal(session.username, 'Visitante (Demo)');
+  assert.equal(session.role, 'demo');
+  assert.equal(session.userId, 9999);
+});
+
+test('Motor de simulação alterna cenários e calcula métricas em tempo real', async () => {
+  const { simulationService } = await import('../backend/src/services/simulationService.js');
+  
+  // Inicia no cenário torneira
+  simulationService.start('torneira');
+  assert.equal(simulationService.isActive(), true);
+  assert.equal(simulationService.getScenario(), 'torneira');
+
+  // Alterna para chuveiro
+  simulationService.setScenario('chuveiro');
+  assert.equal(simulationService.getScenario(), 'chuveiro');
+
+  // Alterna para vazamento_leve
+  simulationService.setScenario('vazamento_leve');
+  assert.equal(simulationService.getScenario(), 'vazamento_leve');
+
+  // Status consolidado
+  const status = simulationService.getCurrentStatus();
+  assert.equal(status.active, true);
+  assert.equal(status.scenario, 'vazamento_leve');
+  assert.ok(typeof status.totalLiters === 'number');
+
+  // Para a simulação
+  simulationService.stop();
+  assert.equal(simulationService.isActive(), false);
+});
+
+
 
 

@@ -287,6 +287,94 @@ apiRouter.post('/registro', (req: Request, res: Response): void => {
   });
 });
 
+/**
+ * POST /api/demo-login — Acesso instantâneo ao Modo Demonstração & Simulação sem credenciais
+ */
+apiRouter.post('/demo-login', (req: Request, res: Response): void => {
+  // Garante que o motor de simulação esteja em execução com vazão ativa (cenário torneira/chuveiro)
+  if (!simulationService.isActive()) {
+    simulationService.start('torneira');
+  }
+
+  // Se o banco estiver sem leituras ou com poucas amostras, gera histórico inicial para o gráfico
+  try {
+    const totalLeituras = queryOne<{ count: number }>(`SELECT COUNT(*) as count FROM leituras`)?.count || 0;
+    if (totalLeituras < 10) {
+      const now = Date.now();
+      const tariffM3 = Number(queryOne(`SELECT valor FROM configuracoes WHERE chave = 'tarifa_m3'`)?.valor || 4.50);
+      let cumulative = 12.5;
+
+      for (let i = 15; i >= 1; i--) {
+        const timePoint = new Date(now - i * 3000).toISOString();
+        const flow = Number((4.3 + Math.random() * 0.8).toFixed(2));
+        const deltaSeconds = 3.0;
+        const incrementalLiters = Number(((flow / 60.0) * deltaSeconds).toFixed(3));
+        cumulative += incrementalLiters;
+        const m3Incremental = litersToCubicMeters(incrementalLiters);
+        const custoIncremental = calculateCost(m3Incremental, tariffM3);
+        const m3Total = litersToCubicMeters(cumulative);
+        const custoAcumulado = calculateCost(m3Total, tariffM3);
+
+        run(
+          `INSERT INTO leituras (
+            timestamp, vazao_lmin, litros_incrementais, litros_acumulados,
+            custo_incremental, custo_acumulado, status, origem
+          ) VALUES (?, ?, ?, ?, ?, ?, 'normal', 'simulado')`,
+          [timePoint, flow, incrementalLiters, Number(cumulative.toFixed(2)), custoIncremental, custoAcumulado]
+        );
+      }
+    }
+
+    // Se não houver alertas, insere um exemplo de alerta resolvido no histórico para demonstração
+    const totalAlertas = queryOne<{ count: number }>(`SELECT COUNT(*) as count FROM alertas`)?.count || 0;
+    if (totalAlertas === 0) {
+      const sampleTime = new Date(Date.now() - 3600000).toISOString();
+      const resolvedTime = new Date(Date.now() - 3400000).toISOString();
+      run(
+        `INSERT INTO alertas (timestamp, tipo, severidade, descricao, status, valor_detectado, resolvido_em)
+         VALUES (?, 'VAZAMENTO_CONTINUO', 'media', 'Demonstração: Detecção de fluxo contínuo durante a madrugada', 'resolvido', '1.2 L/min', ?)`,
+        [sampleTime, resolvedTime]
+      );
+    }
+  } catch (err) {
+    console.warn('[DEMO] Aviso ao semear dados iniciais de simulação:', err);
+  }
+
+  // Gera uma sessão segura com papel 'demo'
+  const demoUser = {
+    id: 9999,
+    username: 'Visitante (Demo)',
+    role: 'demo'
+  };
+
+  const token = createSession(demoUser);
+
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https' || process.env.NODE_ENV === 'production';
+  res.cookie('sgh_session', token, {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: isHttps ? 'none' : 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
+  });
+
+  try {
+    run(
+      `INSERT INTO eventos_sistema (timestamp, tipo, mensagem, detalhe) VALUES (?, 'AUTH', 'DEMO_LOGIN', ?)`,
+      [new Date().toISOString(), 'Acesso direto concedido via Modo Demonstração & Simulação']
+    );
+  } catch {}
+
+  res.json({
+    sucesso: true,
+    mensagem: 'Modo Demonstração ativado com sucesso!',
+    usuario: demoUser,
+    token,
+    modoDemo: true,
+    cenario: simulationService.getScenario()
+  });
+});
+
 // Código temporário de recuperação em memória
 let activeRecoveryCode: { codigo: string; expiraEm: number } = {
   codigo: '839204',
@@ -976,6 +1064,88 @@ apiRouter.post('/simulacao/cenario', (req: Request, res: Response): void => {
     sucesso: true,
     cenarioAtual: cenario,
     mensagem: `Cenário alterado para: ${cenario}`
+  });
+});
+
+/**
+ * POST /api/simulacao/alerta-teste — Dispara um alerta de teste em tempo real para demonstração
+ */
+apiRouter.post('/simulacao/alerta-teste', (req: Request, res: Response): void => {
+  const { tipo } = req.body || {};
+  const now = new Date().toISOString();
+
+  let tipoAlerta = 'VAZAMENTO_CONTINUO';
+  let severidade = 'media';
+  let descricao = 'Simulação: Vazamento contínuo persistente detectado pelo algoritmo';
+  let valor = '2.4 L/min';
+
+  if (tipo === 'ruptura') {
+    tipoAlerta = 'RUPTURA_CRITICA';
+    severidade = 'critica';
+    descricao = 'Simulação: Ruptura ou vazão anômala severa (>35 L/min)';
+    valor = '38.2 L/min';
+  } else if (tipo === 'sensor') {
+    tipoAlerta = 'SENSOR_FALHA';
+    severidade = 'baixa';
+    descricao = 'Simulação: Interrupção temporária de sinal de telemetria';
+    valor = '0 L/min';
+  }
+
+  run(
+    `INSERT INTO alertas (timestamp, tipo, severidade, descricao, status, valor_detectado)
+     VALUES (?, ?, ?, ?, 'ativo', ?)`,
+    [now, tipoAlerta, severidade, descricao, valor]
+  );
+
+  res.json({
+    sucesso: true,
+    mensagem: 'Alerta de demonstração disparado com sucesso!',
+    alerta: {
+      timestamp: now,
+      tipo: tipoAlerta,
+      severidade,
+      descricao,
+      valor_detectado: valor,
+      status: 'ativo'
+    }
+  });
+});
+
+/**
+ * POST /api/simulacao/pulso — Injeta um pulso rápido de consumo para visualização imediata no gráfico
+ */
+apiRouter.post('/simulacao/pulso', (req: Request, res: Response): void => {
+  const { volumeLitros } = req.body || {};
+  const litros = Number(volumeLitros) > 0 ? Number(volumeLitros) : 5.0;
+
+  // Temporariamente acelera a simulação no cenário chuveiro
+  simulationService.setScenario('chuveiro');
+  setTimeout(() => {
+    if (simulationService.getScenario() === 'chuveiro') {
+      simulationService.setScenario('torneira');
+    }
+  }, 6000);
+
+  res.json({
+    sucesso: true,
+    mensagem: `Pulso de consumo de ${litros}L injetado na simulação!`
+  });
+});
+
+/**
+ * POST /api/simulacao/resetar-dados — Restaura o consumo simulado para estaca zero
+ */
+apiRouter.post('/simulacao/resetar-dados', (_req: Request, res: Response): void => {
+  try {
+    run(`DELETE FROM leituras WHERE origem = 'simulado'`);
+    run(`UPDATE alertas SET status = 'resolvido', resolvido_em = ? WHERE status = 'ativo'`, [new Date().toISOString()]);
+  } catch (err) {
+    console.warn('Erro ao resetar dados de simulação:', err);
+  }
+
+  res.json({
+    sucesso: true,
+    mensagem: 'Dados de simulação resetados com sucesso.'
   });
 });
 
