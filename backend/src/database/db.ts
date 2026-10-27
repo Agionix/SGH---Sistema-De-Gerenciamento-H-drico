@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import initSqlJs, { Database, SqlValue } from 'sql.js';
+// @ts-ignore
+import initSqlJsInline from 'sql.js/dist/sql-wasm-inline.js';
+import initSqlJsDefault, { Database, SqlValue } from 'sql.js';
 import { config } from '../config/index.js';
 import { generateSalt, hashPassword } from '../utils/security.js';
 
@@ -46,31 +48,90 @@ export function schedulePersist(): void {
 }
 
 /**
+ * Carrega a engine do SQLite WebAssembly de forma ultra-resiliente
+ * Dá prioridade ao build inline (WASM embutido em Base64), eliminando o erro ENOENT
+ * de sql-wasm.wasm em ambientes serverless da Vercel ou AWS Lambda.
+ */
+async function loadSqlJsEngine() {
+  // 1. Tenta prioritariamente a versão inline com WebAssembly embutido em Base64
+  try {
+    const inlineLoader = (initSqlJsInline && (initSqlJsInline as any).default) || initSqlJsInline;
+    if (typeof inlineLoader === 'function') {
+      const sqlEngine = await inlineLoader();
+      if (sqlEngine && sqlEngine.Database) {
+        return sqlEngine;
+      }
+    }
+  } catch (inlineErr) {
+    console.warn('[DATABASE] Aviso: motor WASM inline falhou, tentando fallback com arquivos em disco:', inlineErr);
+  }
+
+  // 2. Se o inline falhar, procura o arquivo binário sql-wasm.wasm nos caminhos possíveis
+  const candidateWasmPaths = [
+    path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+    path.join('/var/task', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+    path.join('/var/task', 'dist', 'sql-wasm.wasm'),
+    path.resolve(process.cwd(), 'dist', 'sql-wasm.wasm')
+  ];
+
+  for (const candidatePath of candidateWasmPaths) {
+    try {
+      if (fs.existsSync(candidatePath)) {
+        const wasmBinary = fs.readFileSync(candidatePath);
+        const arrayBuffer = wasmBinary.buffer.slice(
+          wasmBinary.byteOffset,
+          wasmBinary.byteOffset + wasmBinary.byteLength
+        ) as ArrayBuffer;
+        return await initSqlJsDefault({ wasmBinary: arrayBuffer });
+      }
+    } catch {}
+  }
+
+  // 3. Fallback padrão com locateFile customizado
+  return await initSqlJsDefault({
+    locateFile: (file: string) => {
+      for (const candidatePath of candidateWasmPaths) {
+        if (candidatePath.endsWith(file) && fs.existsSync(candidatePath)) {
+          return candidatePath;
+        }
+      }
+      return file;
+    }
+  });
+}
+
+/**
  * Inicializa a conexão SQLite, cria tabelas e insere dados essenciais
  */
 export async function initDatabase(): Promise<Database> {
   if (dbInstance) return dbInstance;
 
-  const SQL = await initSqlJs();
+  const SQL = await loadSqlJsEngine();
   const dir = path.dirname(config.dbPath);
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+    } catch (err) {
+      console.warn('[DATABASE] Não foi possível criar diretório para banco, usando fallback:', err);
+    }
   }
 
+  let activeDb: Database;
   if (fs.existsSync(config.dbPath)) {
     try {
       const fileBuffer = fs.readFileSync(config.dbPath);
-      dbInstance = new SQL.Database(fileBuffer);
+      activeDb = new SQL.Database(fileBuffer);
     } catch (err) {
       console.warn('[DATABASE] Arquivo SQLite existente corrompido ou inacessível. Criando novo.', err);
-      dbInstance = new SQL.Database();
+      activeDb = new SQL.Database();
     }
   } else {
-    dbInstance = new SQL.Database();
+    activeDb = new SQL.Database();
   }
+  dbInstance = activeDb;
 
   // Criação das tabelas relacionais
-  dbInstance.run(`
+  activeDb.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -125,15 +186,15 @@ export async function initDatabase(): Promise<Database> {
   `);
 
   // Seeding de configurações padrão
-  seedDefaultConfig(dbInstance);
+  seedDefaultConfig(activeDb);
 
   // Seeding do usuário administrador inicial se não existir
-  seedAdminUser(dbInstance);
+  seedAdminUser(activeDb);
 
   // Persiste a estrutura inicial em disco
   persistDatabase();
 
-  return dbInstance;
+  return activeDb;
 }
 
 /**

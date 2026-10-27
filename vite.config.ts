@@ -21,6 +21,12 @@ function copyFrontendPlugin(): Plugin {
         if (fs.existsSync(loginPath)) {
           fs.copyFileSync(loginPath, indexPath);
         }
+        // Copia sql-wasm.wasm se existir para dist/ como garantia adicional
+        const wasmSrc = path.resolve(__dirname, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
+        const wasmDest = path.resolve(destDir, 'sql-wasm.wasm');
+        if (fs.existsSync(wasmSrc)) {
+          fs.copyFileSync(wasmSrc, wasmDest);
+        }
         console.log('[build] Arquivos do frontend copiados para dist/ e dist/index.html sincronizado.');
       }
     },
