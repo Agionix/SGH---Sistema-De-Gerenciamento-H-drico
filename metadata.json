@@ -1,0 +1,7 @@
+{
+  "name": "SGH — Sistema de Gerenciamento Hidráulico",
+  "description": "Sistema offline para monitoramento de vazão de água em tempo real, consumo acumulado, estimativa de custos financeiros e detecção de vazamentos via ESP32.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
