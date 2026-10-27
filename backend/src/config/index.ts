@@ -32,7 +32,11 @@ export const config: AppConfig = {
   serialPort: process.env.SERIAL_PORT || 'COM3',
   serialBaudrate: parseInt(process.env.SERIAL_BAUDRATE || '115200', 10),
   serialAutoConnect: process.env.SERIAL_AUTO_CONNECT !== 'false',
-  dbPath: process.env.DB_PATH || (process.env.VERCEL ? path.join('/tmp', 'sgh.sqlite3') : path.resolve(process.cwd(), 'data', 'sgh.sqlite3')),
+  dbPath: process.env.DB_PATH || (
+    process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT
+      ? path.join('/tmp', 'sgh.sqlite3')
+      : path.resolve(process.cwd(), 'data', 'sgh.sqlite3')
+  ),
   simulationMode: process.env.SIMULATION_MODE === 'true',
   defaultTariffM3: parseFloat(process.env.DEFAULT_TARIFF_M3 || '4.50'),
   defaultCalibrationFactor: parseFloat(process.env.DEFAULT_CALIBRATION_FACTOR || '7.5'),

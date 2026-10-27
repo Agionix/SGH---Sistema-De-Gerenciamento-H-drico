@@ -15,7 +15,13 @@ function copyFrontendPlugin(): Plugin {
       const destDir = path.resolve(__dirname, 'dist');
       if (fs.existsSync(srcDir) && fs.existsSync(destDir)) {
         fs.cpSync(srcDir, destDir, { recursive: true });
-        console.log('[build] Arquivos estáticos do frontend copiados para dist/');
+        // Copia login.html para index.html no dist para acesso imediato e sem redirecionamentos na raiz
+        const loginPath = path.resolve(destDir, 'login.html');
+        const indexPath = path.resolve(destDir, 'index.html');
+        if (fs.existsSync(loginPath)) {
+          fs.copyFileSync(loginPath, indexPath);
+        }
+        console.log('[build] Arquivos do frontend copiados para dist/ e dist/index.html sincronizado.');
       }
     },
   };

@@ -21,7 +21,16 @@ export function persistDatabase(): void {
     }
     fs.writeFileSync(config.dbPath, buffer);
   } catch (err) {
-    console.error('[DATABASE] Erro ao persistir banco de dados em disco:', err);
+    const fallbackPath = path.join('/tmp', 'sgh.sqlite3');
+    if (config.dbPath !== fallbackPath) {
+      try {
+        const data = dbInstance.export();
+        fs.writeFileSync(fallbackPath, Buffer.from(data));
+        config.dbPath = fallbackPath;
+        return;
+      } catch {}
+    }
+    console.warn('[DATABASE] Persistência em disco ignorada (ambiente somente leitura/serverless):', err);
   }
 }
 
