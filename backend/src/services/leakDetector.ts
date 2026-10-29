@@ -121,11 +121,13 @@ export class LeakDetectorService {
    */
   private recordAlertInDatabase(alert: AlertNotification) {
     const nowIso = new Date().toISOString();
+    const fiveMinAgoIso = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
     // Verifica se já existe um alerta ativo do mesmo tipo gerado nos últimos 5 minutos
     const recent = queryOne(
       `SELECT id FROM alertas 
-       WHERE tipo = ? AND status = 'ativo' AND datetime(timestamp) >= datetime('now', '-5 minutes')`,
-      [alert.tipo]
+       WHERE tipo = ? AND status = 'ativo' AND timestamp >= ?`,
+      [alert.tipo, fiveMinAgoIso]
     );
 
     if (!recent) {

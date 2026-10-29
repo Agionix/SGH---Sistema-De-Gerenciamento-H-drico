@@ -23,6 +23,7 @@ async function bootstrap() {
   // Middlewares essenciais
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
+  app.use(express.text({ type: ['text/*', 'application/text'] }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 

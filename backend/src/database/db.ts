@@ -100,21 +100,25 @@ async function loadSqlJsEngine() {
   });
 }
 
+let initDbPromise: Promise<Database> | null = null;
+
 /**
  * Inicializa a conexão SQLite, cria tabelas e insere dados essenciais
  */
 export async function initDatabase(): Promise<Database> {
   if (dbInstance) return dbInstance;
+  if (initDbPromise) return initDbPromise;
 
-  const SQL = await loadSqlJsEngine();
-  const dir = path.dirname(config.dbPath);
-  if (!fs.existsSync(dir)) {
-    try {
-      fs.mkdirSync(dir, { recursive: true });
-    } catch (err) {
-      console.warn('[DATABASE] Não foi possível criar diretório para banco, usando fallback:', err);
+  initDbPromise = (async () => {
+    const SQL = await loadSqlJsEngine();
+    const dir = path.dirname(config.dbPath);
+    if (!fs.existsSync(dir)) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+      } catch (err) {
+        console.warn('[DATABASE] Não foi possível criar diretório para banco, usando fallback:', err);
+      }
     }
-  }
 
   let activeDb: Database;
   if (fs.existsSync(config.dbPath)) {
@@ -195,6 +199,9 @@ export async function initDatabase(): Promise<Database> {
   persistDatabase();
 
   return activeDb;
+  })();
+
+  return initDbPromise;
 }
 
 /**
@@ -286,16 +293,36 @@ export function run(sql: string, params: SqlValue[] = []): { changes: number } {
 }
 
 /**
- * Realiza backup do banco para arquivo com timestamp
+ * Realiza backup do banco para arquivo com timestamp (compatível com Vercel/Serverless e ambientes locais)
  */
 export function createBackup(): string {
   persistDatabase();
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupDir = path.resolve(process.cwd(), 'data', 'backups');
-  if (!fs.existsSync(backupDir)) {
-    fs.mkdirSync(backupDir, { recursive: true });
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+  const baseDir = isServerless ? '/tmp' : path.resolve(process.cwd(), 'data');
+  const backupDir = path.join(baseDir, 'backups');
+
+  try {
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+    const backupPath = path.join(backupDir, `sgh_backup_${timestamp}.sqlite3`);
+    if (dbInstance) {
+      const data = dbInstance.export();
+      fs.writeFileSync(backupPath, Buffer.from(data));
+      return backupPath;
+    } else if (fs.existsSync(config.dbPath)) {
+      fs.copyFileSync(config.dbPath, backupPath);
+      return backupPath;
+    }
+  } catch (err) {
+    // Fallback de segurança para /tmp direto
+    const fallbackPath = path.join('/tmp', `sgh_backup_${timestamp}.sqlite3`);
+    if (dbInstance) {
+      fs.writeFileSync(fallbackPath, Buffer.from(dbInstance.export()));
+      return fallbackPath;
+    }
   }
-  const backupPath = path.join(backupDir, `sgh_backup_${timestamp}.sqlite3`);
-  fs.copyFileSync(config.dbPath, backupPath);
-  return backupPath;
+  return path.join('/tmp', `sgh_backup_${timestamp}.sqlite3`);
 }
+

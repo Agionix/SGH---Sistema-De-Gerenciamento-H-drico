@@ -762,6 +762,16 @@ void loop() {
               <li><strong>Taxa Baud:</strong> Sempre compile e grave com <strong>115200 bps</strong> para compatibilidade direta com o SGH.</li>
             </ul>
           </div>
+
+          <!-- Item 6: Vercel / Servidor na Nuvem vs USB Local -->
+          <div style="background: rgba(14, 116, 144, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); border-radius: 8px; padding: 0.85rem;">
+            <strong style="color: #38bdf8;">
+              6. Por que na Vercel o "Auto-Detectar" não acha minha porta USB COM3?
+            </strong>
+            <p style="margin: 0.4rem 0 0; color: var(--text-muted);">
+              Quando o SGH está hospedado na Vercel ou na nuvem, o backend roda nos servidores remotos da AWS/Vercel que não têm acesso físico à porta USB do seu computador. Para conectar seu microcontrolador com o site na Vercel, utilize a opção <strong>"Conectar USB (Web Serial)"</strong> no topo da tela (disponível no Chrome e Edge), que lê a porta COM direto pelo seu navegador e sincroniza com o site. No caso do ESP32, você também pode usar o firmware Wi-Fi para transmitir telemetria sem cabo.
+            </p>
+          </div>
         </div>
       </div>
 

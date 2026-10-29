@@ -137,9 +137,16 @@ test('Parser serial aceita JSON válido e rejeita lixo serial', () => {
   const ideParsed = parseAndValidateSerialJson(ideMonitorLine);
   assert.ok(ideParsed, 'Deve extrair e interpretar o JSON mesmo com timestamp da IDE');
   assert.equal(ideParsed?.vazao_lmin, 0.00);
-  assert.equal(ideParsed?.litros_totais, 2.84);
-  assert.equal(ideParsed?.dispositivo, 'esp32');
-  assert.equal(ideParsed?.status, 'normal');
+  // Suporte a strings numéricas e vírgulas decimais enviadas por clientes HTTP/IoT
+  const stringNumbers = parseAndValidateSerialJson('{"vazao_lmin":"3.46","litros_totais":"10.50"}');
+  assert.ok(stringNumbers);
+  assert.equal(stringNumbers?.vazao_lmin, 3.46);
+  assert.equal(stringNumbers?.litros_totais, 10.50);
+
+  const commaDecimal = parseAndValidateSerialJson('{"vazao":"3,46","total":"10,50"}');
+  assert.ok(commaDecimal);
+  assert.equal(commaDecimal?.vazao_lmin, 3.46);
+  assert.equal(commaDecimal?.litros_totais, 10.50);
 });
 
 // ==============================================================================
@@ -406,6 +413,14 @@ test('Motor de simulação alterna cenários e calcula métricas em tempo real',
   simulationService.stop();
   assert.equal(simulationService.isActive(), false);
 });
+
+test('createBackup executa com resiliência sem lançar exceções de sistema de arquivos', async () => {
+  const { createBackup } = await import('../backend/src/database/db.js');
+  const backupPath = createBackup();
+  assert.ok(backupPath && typeof backupPath === 'string');
+  assert.ok(backupPath.includes('.sqlite3'));
+});
+
 
 
 

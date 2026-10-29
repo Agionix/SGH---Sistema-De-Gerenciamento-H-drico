@@ -155,19 +155,26 @@ export function parseAndValidateSerialJson(rawLine: string): SerialPayload | nul
       const data = JSON.parse(jsonStr);
 
       // Normalização de chaves flexíveis (ESP32 e Arduino)
-      const rawFlow = data.vazao_lmin ?? data.vazao ?? data.flow ?? data.flow_rate;
-      const rawTotal = data.litros_totais ?? data.litros ?? data.total ?? data.total_liters;
+      const rawFlow = data.vazao_lmin ?? data.vazao ?? data.flow ?? data.flow_rate ?? data.q;
+      const rawTotal = data.litros_totais ?? data.litros ?? data.total ?? data.total_liters ?? data.volume;
       const rawStatus = data.status ?? 'normal';
-      const rawDevice = data.dispositivo ?? data.device;
+      const rawDevice = data.dispositivo ?? data.device ?? data.origem;
+
+      // Conversão flexível de número (aceita number, string "3.46" ou string "3,46")
+      const parsedFlow = typeof rawFlow === 'string'
+        ? parseFloat(rawFlow.replace(',', '.').trim())
+        : Number(rawFlow);
+
+      const parsedTotal = typeof rawTotal === 'string'
+        ? parseFloat(rawTotal.replace(',', '.').trim())
+        : Number(rawTotal);
 
       // Validação numérica rigorosa
       if (
-        typeof rawFlow !== 'number' ||
-        typeof rawTotal !== 'number' ||
-        isNaN(rawFlow) ||
-        isNaN(rawTotal) ||
-        rawFlow < 0 ||
-        rawTotal < 0
+        isNaN(parsedFlow) ||
+        isNaN(parsedTotal) ||
+        parsedFlow < 0 ||
+        parsedTotal < 0
       ) {
         return null;
       }
@@ -180,8 +187,8 @@ export function parseAndValidateSerialJson(rawLine: string): SerialPayload | nul
       }
 
       return {
-        vazao_lmin: Number(rawFlow.toFixed(2)),
-        litros_totais: Number(rawTotal.toFixed(2)),
+        vazao_lmin: Number(parsedFlow.toFixed(2)),
+        litros_totais: Number(parsedTotal.toFixed(2)),
         status: String(rawStatus).slice(0, 50),
         dispositivo
       };

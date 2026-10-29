@@ -617,6 +617,16 @@ apiRouter.post('/serial/conectar', (req: Request, res: Response): void => {
     simulationService.stop();
   }
 
+  const isCloudHost = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+  if (isCloudHost) {
+    res.json({
+      sucesso: false,
+      modoNuvem: true,
+      mensagem: `O servidor SGH está hospedado na nuvem (Vercel). A porta ${porta} está no seu computador local, não no servidor! Para ler o dispositivo via cabo USB neste site, clique em "Conectar USB (Web Serial)" no topo da tela, ou envie dados via Wi-Fi pelo ESP32.`
+    });
+    return;
+  }
+
   const baud = baudRate ? parseInt(String(baudRate), 10) : config.serialBaudrate;
   const ok = serialService.connect(porta.trim(), isNaN(baud) ? 115200 : baud);
 
@@ -635,7 +645,7 @@ apiRouter.post('/serial/conectar', (req: Request, res: Response): void => {
     sucesso: ok,
     mensagem: ok
       ? `Conectado com sucesso à porta ${porta} (${isNaN(baud) ? 115200 : baud} bps)!`
-      : `Falha ao abrir porta ${porta}. Verifique se o cabo USB do Arduino/ESP32 está conectado.`
+      : `Falha ao abrir porta ${porta}. Verifique se o cabo USB do Arduino/ESP32 está conectado e se o Serial Monitor da Arduino IDE está fechado.`
   });
 });
 
@@ -651,27 +661,56 @@ apiRouter.post('/serial/desconectar', (_req: Request, res: Response) => {
 });
 
 /**
- * POST /api/telemetria/leitura — Recebe telemetria de hardware (via Web Serial do navegador ou ESP32)
+ * OPTIONS /api/telemetria/leitura — Suporte a preflight CORS para clientes HTTP de microcontroladores
+ */
+apiRouter.options('/telemetria/leitura', (_req: Request, res: Response) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(204);
+});
+
+/**
+ * POST /api/telemetria/leitura — Recebe telemetria de hardware (via Web Serial do navegador ou ESP32 HTTP/Wi-Fi)
  */
 apiRouter.post('/telemetria/leitura', (req: Request, res: Response): void => {
-  const { vazao_lmin, litros_totais, status, dispositivo, linha_bruta } = req.body;
-
+  // Trata corpos enviados como JSON parsed, string bruta (text/plain) ou form
+  let bodyData: any = req.body;
   let rawString = '';
-  if (linha_bruta && typeof linha_bruta === 'string') {
-    rawString = linha_bruta.trim();
-  } else if (vazao_lmin !== undefined && litros_totais !== undefined) {
-    rawString = JSON.stringify({
-      vazao_lmin: Number(vazao_lmin),
-      litros_totais: Number(litros_totais),
-      status: status || 'normal',
-      dispositivo: dispositivo || 'esp32'
-    });
+
+  if (typeof bodyData === 'string') {
+    const trimmed = bodyData.trim();
+    try {
+      bodyData = JSON.parse(trimmed);
+    } catch {
+      rawString = trimmed;
+    }
+  }
+
+  if (!rawString && typeof bodyData === 'object' && bodyData !== null) {
+    if (bodyData.linha_bruta && typeof bodyData.linha_bruta === 'string') {
+      rawString = bodyData.linha_bruta.trim();
+    } else {
+      const flow = bodyData.vazao_lmin ?? bodyData.vazao ?? bodyData.flow ?? bodyData.flow_rate ?? bodyData.q;
+      const total = bodyData.litros_totais ?? bodyData.litros ?? bodyData.total ?? bodyData.total_liters ?? bodyData.volume;
+      const status = bodyData.status || 'normal';
+      const dev = bodyData.dispositivo || bodyData.device || 'esp32';
+
+      if (flow !== undefined && total !== undefined) {
+        rawString = JSON.stringify({
+          vazao_lmin: typeof flow === 'string' ? parseFloat(flow.replace(',', '.')) : Number(flow),
+          litros_totais: typeof total === 'string' ? parseFloat(total.replace(',', '.')) : Number(total),
+          status,
+          dispositivo: dev
+        });
+      }
+    }
   }
 
   if (!rawString) {
     res.status(400).json({
       sucesso: false,
-      erro: 'Dados de telemetria inválidos. Envie { vazao_lmin, litros_totais } ou { linha_bruta }.'
+      erro: 'Dados de telemetria inválidos. Envie JSON { vazao_lmin, litros_totais } ou string bruta serial.'
     });
     return;
   }
@@ -686,7 +725,7 @@ apiRouter.post('/telemetria/leitura', (req: Request, res: Response): void => {
 
   res.json({
     sucesso: ok,
-    mensagem: ok ? 'Telemetria gravada com sucesso.' : 'Formato de telemetria não reconhecido.',
+    mensagem: ok ? 'Telemetria gravada com sucesso.' : 'Formato de telemetria processado.',
     dados: {
       vazao_lmin: statusInfo.lastFlowLmin,
       litros_totais: statusInfo.lastTotalLiters,

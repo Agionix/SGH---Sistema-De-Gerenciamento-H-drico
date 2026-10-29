@@ -12,6 +12,7 @@ app.set('trust proxy', 1);
 // Middlewares padrão
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+app.use(express.text({ type: ['text/*', 'application/text'] }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

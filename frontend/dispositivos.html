@@ -933,6 +933,22 @@ void loop() {
               &bull; <strong>Taxa Baud Serial:</strong> O firmware transmite em <strong>115200 bps</strong>. Mantenha essa velocidade configurada tanto no código quanto no navegador.
             </div>
           </div>
+
+          <!-- FAQ 6: Vercel / Nuvem vs USB Local -->
+          <div style="background: rgba(14, 116, 144, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); border-radius: 10px; padding: 1rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+              6. Por que na Vercel a auto-detecção não detecta o cabo USB no meu notebook?
+            </h3>
+            <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              Quando o site está hospedado na <strong>Vercel</strong> ou em servidores em nuvem, a auto-detecção do servidor procura portas USB <em>físicas nos servidores remotos da AWS/Vercel</em>, onde não há nenhum cabo conectado.
+              <br><br>
+              Para ler os dados da porta USB do seu notebook na Vercel:
+              <br>
+              &bull; <strong>Opção 1 (Recomendada):</strong> Clique no botão azul <strong>"Conectar via Cabo USB (Web Serial)"</strong> no topo desta página. O navegador Google Chrome ou Microsoft Edge lê a porta USB do seu notebook e transmite os dados direto para o painel em tempo real!
+              <br>
+              &bull; <strong>Opção 2 (ESP32 Wi-Fi):</strong> Grave o código Wi-Fi oficial no ESP32. Ele enviará os dados diretamente pela rede sem precisar de cabo USB conectado ao computador.
+            </p>
+          </div>
         </div>
       </section>
     </div>

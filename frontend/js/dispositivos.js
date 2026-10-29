@@ -25,9 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorBannerDesc = document.getElementById('errorBannerDesc');
   const dynamicApiUrl = document.getElementById('dynamicApiUrl');
 
-  // Preenche a URL da API dinamicamente para o código do ESP32
+  // Preenche a URL da API dinamicamente para o código do ESP32 com a URL atual (seja Vercel ou local)
   if (dynamicApiUrl) {
     dynamicApiUrl.textContent = window.location.origin;
+  }
+  const snippetPageEsp32Wifi = document.getElementById('snippetPageEsp32Wifi');
+  if (snippetPageEsp32Wifi) {
+    snippetPageEsp32Wifi.innerHTML = snippetPageEsp32Wifi.innerHTML.replace(
+      /https:\/\/ais-dev-[^"'\s]+/g,
+      `${window.location.origin}/api/telemetria/leitura`
+    );
   }
 
   // Detecta se está em iframe (AI Studio preview)

@@ -853,10 +853,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  let lastWebSerialHistoryTime = 0;
   webSerial.onReading((data) => {
     // Ao receber dados do WebSerial, atualiza o status instantaneamente
     fetchStatus();
-    loadHistory(1);
+    const now = Date.now();
+    if (now - lastWebSerialHistoryTime > 8000) {
+      lastWebSerialHistoryTime = now;
+      loadHistory(historyCurrentPage);
+    }
   });
 
   // ============================================================================
