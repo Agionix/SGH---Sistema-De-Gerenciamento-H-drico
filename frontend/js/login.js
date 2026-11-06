@@ -43,54 +43,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (chkRememberMe) chkRememberMe.checked = true;
   }
 
-  // Controles do Modo Demonstração & Simulação
-  const btnEnterDemo = document.getElementById('btnEnterDemo');
-  const btnDemoText = document.getElementById('btnDemoText');
-  const btnDemoSpinner = document.getElementById('btnDemoSpinner');
-
-  async function handleDemoAccess() {
-    if (btnEnterDemo) btnEnterDemo.disabled = true;
-    if (btnDemoText) btnDemoText.textContent = 'Iniciando Simulação...';
-    if (btnDemoSpinner) btnDemoSpinner.style.display = 'inline-block';
-    showAlert('Acessando Modo Demonstração com dados em tempo real...', 'info');
-
-    try {
-      await SghApi.enterDemoMode();
-      setTimeout(() => {
-        window.location.href = '/dashboard.html?demo=true';
-      }, 400);
-    } catch {
-      // Fallback 100% resiliente em qualquer condição
-      sessionStorage.setItem('sgh_demo_mode', 'true');
-      window.location.href = '/dashboard.html?demo=true';
+  // Verifica se já existe uma sessão ativa válida de forma silenciosa
+  try {
+    const session = await SghApi.checkSession();
+    if (session && session.autenticado) {
+      window.location.replace('/dashboard.html');
+      return;
     }
-  }
-
-  btnEnterDemo?.addEventListener('click', handleDemoAccess);
-
-  // Se a URL contiver parâmetro ?demo=true ou hash #demo, ativa o modo demo imediatamente
-  if (window.location.search.includes('demo=true') || window.location.hash.includes('demo')) {
-    handleDemoAccess();
-    return;
-  }
-
-  // Se o usuário clicou para sair da simulação (?exit_demo=true), limpa a flag
-  if (window.location.search.includes('exit_demo=true')) {
-    sessionStorage.removeItem('sgh_demo_mode');
-    sessionStorage.removeItem('sgh_session_token');
-  }
-
-  // Verifica se já existe uma sessão ativa válida de forma silenciosa (apenas se não solicitou saída)
-  if (!window.location.search.includes('exit_demo=true')) {
-    try {
-      const session = await SghApi.checkSession();
-      if (session && session.autenticado) {
-        window.location.replace('/dashboard.html');
-        return;
-      }
-    } catch {
-      // Permanece no formulário normalmente
-    }
+  } catch {
+    // Permanece no formulário normalmente
   }
 
   // Busca e exibe o código de recuperação instantâneo do servidor

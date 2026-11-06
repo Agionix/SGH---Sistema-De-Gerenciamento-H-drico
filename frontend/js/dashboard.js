@@ -11,14 +11,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnBackup = document.getElementById('btnBackup');
   const btnOpenSettings = document.getElementById('btnOpenSettings');
 
-  // Banner de Simulação & Modo Demonstração
-  const simulationBanner = document.getElementById('simulationBanner');
-  const simScenarioSelect = document.getElementById('simScenarioSelect');
-  const btnToggleSim = document.getElementById('btnToggleSim');
-  const btnSimTestAlert = document.getElementById('btnSimTestAlert');
-  const btnSimPulse = document.getElementById('btnSimPulse');
-  const btnExitDemoMode = document.getElementById('btnExitDemoMode');
-
   // Elementos dos Cards
   const valFlow = document.getElementById('valFlow');
   const badgeFlowStatus = document.getElementById('badgeFlowStatus');
@@ -130,10 +122,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ctx = flowChartCanvas.getContext('2d');
     if (!ctx) return;
 
-    // Gradiente sob a linha
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
-    gradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? '#1e293b' : '#f1f5f9';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const lineColor = isDark ? '#38bdf8' : '#0f172a';
+
+    // Preenchimento sutil e elegante sob a curva
+    const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+    if (isDark) {
+      gradient.addColorStop(0, 'rgba(56, 189, 248, 0.12)');
+      gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+    } else {
+      gradient.addColorStop(0, 'rgba(15, 23, 42, 0.06)');
+      gradient.addColorStop(1, 'rgba(15, 23, 42, 0.0)');
+    }
 
     chartInstance = new window.Chart(ctx, {
       type: 'line',
@@ -142,42 +144,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         datasets: [{
           label: 'Vazão Instantânea (L/min)',
           data: [],
-          borderColor: '#06b6d4',
+          borderColor: lineColor,
           backgroundColor: gradient,
-          borderWidth: 2.5,
-          tension: 0.35,
+          borderWidth: 2,
+          tension: 0.25,
           fill: true,
           pointRadius: 2,
-          pointHoverRadius: 5,
-          pointBackgroundColor: '#38bdf8'
+          pointHoverRadius: 4,
+          pointBackgroundColor: lineColor
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 300
+          duration: 200
         },
         scales: {
           x: {
             grid: {
-              color: 'rgba(30, 41, 59, 0.5)'
+              color: gridColor,
+              drawBorder: false
             },
             ticks: {
-              color: '#64748b',
+              color: tickColor,
               maxTicksLimit: 8,
-              font: { family: 'monospace', size: 11 }
+              font: { family: 'ui-monospace, monospace', size: 11 }
             }
           },
           y: {
             beginAtZero: true,
             suggestedMax: 15,
             grid: {
-              color: 'rgba(30, 41, 59, 0.5)'
+              color: gridColor,
+              drawBorder: false
             },
             ticks: {
-              color: '#94a3b8',
-              font: { family: 'monospace', size: 11 },
+              color: tickColor,
+              font: { family: 'ui-monospace, monospace', size: 11 },
               callback: function(val) {
                 return val + ' L/m';
               }
@@ -191,9 +195,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           tooltip: {
             backgroundColor: '#0f172a',
             titleColor: '#94a3b8',
-            bodyColor: '#38bdf8',
-            borderColor: '#1e293b',
+            bodyColor: '#ffffff',
+            borderColor: '#334155',
             borderWidth: 1,
+            padding: 8,
+            boxPadding: 4,
             callbacks: {
               label: function(context) {
                 return 'Vazão: ' + Number(context.raw).toFixed(2) + ' L/min';
@@ -204,6 +210,41 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+
+  function updateChartTheme() {
+    if (!chartInstance || !flowChartCanvas) return;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? '#1e293b' : '#f1f5f9';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const lineColor = isDark ? '#38bdf8' : '#0f172a';
+
+    const ctx = flowChartCanvas.getContext('2d');
+    if (ctx) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+      if (isDark) {
+        gradient.addColorStop(0, 'rgba(56, 189, 248, 0.12)');
+        gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+      } else {
+        gradient.addColorStop(0, 'rgba(15, 23, 42, 0.06)');
+        gradient.addColorStop(1, 'rgba(15, 23, 42, 0.0)');
+      }
+      chartInstance.data.datasets[0].backgroundColor = gradient;
+    }
+
+    chartInstance.data.datasets[0].borderColor = lineColor;
+    chartInstance.data.datasets[0].pointBackgroundColor = lineColor;
+    if (chartInstance.options.scales && chartInstance.options.scales.x) {
+      chartInstance.options.scales.x.grid.color = gridColor;
+      chartInstance.options.scales.x.ticks.color = tickColor;
+    }
+    if (chartInstance.options.scales && chartInstance.options.scales.y) {
+      chartInstance.options.scales.y.grid.color = gridColor;
+      chartInstance.options.scales.y.ticks.color = tickColor;
+    }
+    chartInstance.update();
+  }
+
+  window.addEventListener('sgh:themechange', updateChartTheme);
 
   // Janelas de tempo do gráfico
   windowButtons.forEach(btn => {
@@ -285,10 +326,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Card 4: Estado do Sistema e Dispositivo Identificado
       if (valSerialPortName) {
-        if (d.modo_simulacao) {
-          valSerialPortName.textContent = 'Simulador Ativo';
-        } else if (d.dispositivo_nome) {
-          valSerialPortName.textContent = `${d.dispositivo_nome} (${d.porta_ativa})`;
+        if (d.dispositivo_nome) {
+          valSerialPortName.textContent = `${d.dispositivo_nome} (${d.porta_ativa || 'USB'})`;
         } else {
           valSerialPortName.textContent = d.porta_ativa || 'USB';
         }
@@ -305,14 +344,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Central de Dispositivos (Plug & Play Arduino & ESP32)
       if (deviceHubName) {
-        deviceHubName.textContent = d.modo_simulacao ? 'Simulador Hidráulico Ativo' : (d.dispositivo_nome || 'Microcontrolador USB');
+        deviceHubName.textContent = d.dispositivo_nome || 'Microcontrolador USB';
       }
 
       if (deviceHubBadge) {
-        if (d.modo_simulacao) {
-          deviceHubBadge.textContent = 'Modo Simulação';
-          deviceHubBadge.className = 'state-badge badge-warning';
-        } else if (d.conexao_serial === 'conectado') {
+        if (d.conexao_serial === 'conectado') {
           deviceHubBadge.textContent = 'Conectado & Transmitindo';
           deviceHubBadge.className = 'state-badge badge-normal';
         } else {
@@ -322,13 +358,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (deviceAvatarIcon) {
-        if (d.modo_simulacao) {
-          deviceAvatarIcon.className = 'device-avatar-icon esp32';
-        } else if (d.conexao_serial === 'conectado') {
+        if (d.conexao_serial === 'conectado') {
           if (d.dispositivo_tipo === 'arduino') {
             deviceAvatarIcon.className = 'device-avatar-icon arduino';
-          } else if (d.dispositivo_tipo === 'esp32') {
-            deviceAvatarIcon.className = 'device-avatar-icon esp32';
           } else {
             deviceAvatarIcon.className = 'device-avatar-icon esp32';
           }
@@ -338,31 +370,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (deviceHubMeta) {
-        if (d.modo_simulacao) {
-          deviceHubMeta.textContent = `Simulação de ${d.cenario_simulacao || 'fluxo'} ativa. Alterne para Hardware Real para ler Arduino ou ESP32.`;
-        } else if (d.conexao_serial === 'conectado') {
+        if (d.conexao_serial === 'conectado') {
           deviceHubMeta.textContent = `Porta: ${d.porta_ativa} • Taxa: ${d.taxa_transmissao || 115200} bps • Sensor YF-S201 Ativo (7.5 pulsos/L)`;
         } else {
-          deviceHubMeta.textContent = 'Nenhum Arduino ou ESP32 conectado. Conecte o cabo USB ao computador ou clique em Auto-Detectar.';
+          deviceHubMeta.textContent = 'Nenhum Arduino ou ESP32 conectado. Conecte o cabo USB ao computador ou acesse Dispositivos.';
         }
       }
 
       // Status Pill do Header
       if (serialStatusDot && serialStatusText) {
-        if (d.modo_simulacao) {
-          serialStatusDot.className = 'status-dot simulating';
-          serialStatusText.textContent = 'Modo Simulação';
-          if (simulationBanner) simulationBanner.style.display = 'flex';
-          if (simScenarioSelect) simScenarioSelect.value = d.cenario_simulacao || 'torneira';
-        } else if (d.conexao_serial === 'conectado') {
+        if (d.conexao_serial === 'conectado') {
           serialStatusDot.className = 'status-dot connected';
           const devLabel = d.dispositivo_tipo === 'arduino' ? 'Arduino' : (d.dispositivo_tipo === 'esp32' ? 'ESP32' : 'Hardware');
-          serialStatusText.textContent = `${devLabel} Conectado (${d.porta_ativa})`;
-          if (simulationBanner) simulationBanner.style.display = 'none';
+          serialStatusText.textContent = `${devLabel} Conectado (${d.porta_ativa || 'USB'})`;
         } else {
           serialStatusDot.className = 'status-dot disconnected';
           serialStatusText.textContent = 'Microcontrolador Desconectado';
-          if (simulationBanner) simulationBanner.style.display = 'none';
         }
       }
 
@@ -532,11 +555,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               <td>+${item.litros_incrementais.toFixed(3)} L</td>
               <td>${item.m3_acumulados.toFixed(4)} m³</td>
               <td>R$ ${item.custo_estimado.toFixed(2).replace('.', ',')}</td>
-              <td>
-                <span style="font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: ${item.origem === 'simulado' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}; color: ${item.origem === 'simulado' ? '#fde68a' : '#86efac'};">
-                  ${item.origem === 'simulado' ? 'SIM' : 'REAL'}
+                <span style="font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #86efac;">
+                  REAL
                 </span>
-              </td>
             </tr>
           `;
         }).join('');
@@ -568,63 +589,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // ============================================================================
-  // 6. CONTROLE DE SIMULAÇÃO & MODO DEMONSTRAÇÃO
-  // ============================================================================
-  simScenarioSelect?.addEventListener('change', async () => {
-    const selected = simScenarioSelect.value;
-    await SghApi.setSimulationScenario(selected);
-    showToast(`Cenário simulado alterado para: ${selected.replace('_', ' ')}`, 'info');
-    fetchStatus();
-  });
-
-  btnToggleSim?.addEventListener('click', async () => {
-    const res = await SghApi.toggleSimulation();
-    if (res && res.sucesso) {
-      btnToggleSim.textContent = res.simulacaoAtiva ? 'Pausar Simulação' : 'Retomar Simulação';
-      showToast(res.simulacaoAtiva ? 'Simulação em execução.' : 'Simulação pausada.', 'info');
-      fetchStatus();
-      loadHistory(1);
-    }
-  });
-
-  // Disparar Alerta Simulado em Tempo Real
-  btnSimTestAlert?.addEventListener('click', async () => {
-    btnSimTestAlert.disabled = true;
-    try {
-      showToast('Disparando alerta de teste simulado...', 'info');
-      await SghApi.triggerTestAlert('vazamento');
-      showToast('Alerta simulado gerado! Inspecione a Central de Alertas.', 'danger');
-      await loadAlerts();
-      await fetchStatus();
-    } catch (err) {
-      showToast('Aviso ao disparar alerta: ' + err.message, 'warning');
-    } finally {
-      setTimeout(() => { btnSimTestAlert.disabled = false; }, 800);
-    }
-  });
-
-  // Injetar Pulso de Vazão Rápido
-  btnSimPulse?.addEventListener('click', async () => {
-    btnSimPulse.disabled = true;
-    try {
-      showToast('Pulso de vazão (+5L) injetado na simulação!', 'info');
-      await SghApi.injectFlowPulse(5.0);
-      await fetchStatus();
-      await loadHistory(1);
-    } catch (err) {
-      showToast('Aviso ao injetar pulso: ' + err.message, 'warning');
-    } finally {
-      setTimeout(() => { btnSimPulse.disabled = false; }, 1000);
-    }
-  });
-
-  // Sair do Modo Demonstração
-  btnExitDemoMode?.addEventListener('click', async () => {
-    showToast('Encerrando demonstração...', 'info');
-    await SghApi.exitDemoMode();
-    window.location.replace('/login.html?exit_demo=true');
-  });
 
   // Notificação toast moderna (sem usar window.alert/window.confirm bloqueados em iframes)
   function showToast(message, type = 'info') {
@@ -698,17 +662,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       btnLogout.setAttribute('disabled', 'true');
       btnLogout.style.opacity = '0.5';
-      if (SghApi.isDemoMode()) {
-        await SghApi.exitDemoMode();
-      } else {
-        await SghApi.logout();
-      }
+      await SghApi.logout();
     } catch (err) {
       console.warn('Erro na requisição de logout:', err);
     } finally {
       sessionStorage.removeItem('sgh_session_token');
-      sessionStorage.removeItem('sgh_demo_mode');
-      window.location.replace('/login.html?exit_demo=true');
+      window.location.replace('/login.html');
     }
   });
 
@@ -1065,36 +1024,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ============================================================================
-  // INICIALIZAÇÃO E IDENTIFICAÇÃO DE SESSÃO / MODO DEMO
+  // INICIALIZAÇÃO E IDENTIFICAÇÃO DE SESSÃO
   // ============================================================================
-  const urlParams = new URLSearchParams(window.location.search);
-  const isDemoUrl = urlParams.get('demo') === 'true';
-  const isDemoStorage = SghApi.isDemoMode();
-
-  if (isDemoUrl || isDemoStorage) {
-    sessionStorage.setItem('sgh_demo_mode', 'true');
-    if (userNameBadge) {
-      userNameBadge.innerHTML = '<span style="color:#38bdf8; font-weight:600; display:inline-flex; align-items:center; gap:0.35rem;"><span style="width:7px; height:7px; border-radius:50%; background:#38bdf8; display:inline-block; box-shadow:0 0 6px #38bdf8;"></span>Visitante (Demo)</span>';
-    }
-    if (simulationBanner) {
-      simulationBanner.style.display = 'flex';
-    }
-    SghApi.setSimulationScenario(simScenarioSelect ? simScenarioSelect.value : 'torneira').catch(() => {});
-  } else {
-    try {
-      const sess = await SghApi.checkSession();
-      if (sess && sess.autenticado && sess.usuario) {
-        if (sess.usuario.role === 'demo') {
-          sessionStorage.setItem('sgh_demo_mode', 'true');
-          if (userNameBadge) {
-            userNameBadge.innerHTML = '<span style="color:#38bdf8; font-weight:600;">Visitante (Demo)</span>';
-          }
-          if (simulationBanner) simulationBanner.style.display = 'flex';
-        } else if (userNameBadge) {
-          userNameBadge.textContent = sess.usuario.username || 'Operador';
-        }
+  try {
+    const sess = await SghApi.checkSession();
+    if (sess && sess.autenticado && sess.usuario) {
+      if (userNameBadge) {
+        userNameBadge.textContent = sess.usuario.username || 'Operador';
       }
-    } catch {}
+    }
+  } catch (err) {
+    console.warn('Verificação de sessão inicial:', err);
   }
 
   initChart();

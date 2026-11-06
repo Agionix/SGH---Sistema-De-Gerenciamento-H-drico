@@ -14,7 +14,6 @@ export interface AppConfig {
   serialBaudrate: number;
   serialAutoConnect: boolean;
   dbPath: string;
-  simulationMode: boolean;
   defaultTariffM3: number;
   defaultCalibrationFactor: number;
   defaultMaxFlowLmin: number;
@@ -37,7 +36,6 @@ export const config: AppConfig = {
       ? path.join('/tmp', 'sgh.sqlite3')
       : path.resolve(process.cwd(), 'data', 'sgh.sqlite3')
   ),
-  simulationMode: process.env.SIMULATION_MODE === 'true',
   defaultTariffM3: parseFloat(process.env.DEFAULT_TARIFF_M3 || '4.50'),
   defaultCalibrationFactor: parseFloat(process.env.DEFAULT_CALIBRATION_FACTOR || '7.5'),
   defaultMaxFlowLmin: parseFloat(process.env.DEFAULT_MAX_FLOW_LMIN || '30.0'),

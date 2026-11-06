@@ -7,7 +7,6 @@ import { config } from './backend/src/config/index.js';
 import { initDatabase, persistDatabase } from './backend/src/database/db.js';
 import { apiRouter } from './backend/src/routes/api.js';
 import { serialService } from './backend/src/services/serialService.js';
-import { simulationService } from './backend/src/services/simulationService.js';
 
 async function bootstrap() {
   const app = express();
@@ -52,11 +51,8 @@ async function bootstrap() {
     }
   }
 
-  // Inicialização do hardware serial ou modo de simulação
-  if (config.simulationMode) {
-    console.log('[SGH] Iniciando em MODO DE SIMULAÇÃO (sem necessidade de ESP32 físico).');
-    simulationService.start('torneira');
-  } else if (config.serialAutoConnect) {
+  // Inicialização do hardware serial (Arduino & ESP32)
+  if (config.serialAutoConnect) {
     serialService.autoDetectAndConnect().then((result) => {
       if (result.sucesso) {
         console.log(`[SGH] Dispositivo serial conectado automaticamente: ${result.mensagem}`);
@@ -73,7 +69,6 @@ async function bootstrap() {
   const shutdown = () => {
     console.log('\n[SGH] Encerrando servidor e salvando dados...');
     serialService.disconnect();
-    simulationService.stop();
     persistDatabase();
     process.exit(0);
   };

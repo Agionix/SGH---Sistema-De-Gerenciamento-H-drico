@@ -14,7 +14,6 @@ import {
 import { config } from '../config/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { serialService } from '../services/serialService.js';
-import { simulationService, SimulationScenario } from '../services/simulationService.js';
 import { leakDetector } from '../services/leakDetector.js';
 import { litersToCubicMeters, calculateCost } from '../utils/hydraulic.js';
 
@@ -37,7 +36,6 @@ apiRouter.get('/saude', (_req: Request, res: Response) => {
     uptimeSegundos: Math.floor(process.uptime()),
     memoriaMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
     modoOffline: true,
-    simulacaoAtiva: simulationService.isActive(),
     serialConectado: serialStatus.connected
   });
 });
@@ -287,94 +285,6 @@ apiRouter.post('/registro', (req: Request, res: Response): void => {
   });
 });
 
-/**
- * POST /api/demo-login — Acesso instantâneo ao Modo Demonstração & Simulação sem credenciais
- */
-apiRouter.post('/demo-login', (req: Request, res: Response): void => {
-  // Garante que o motor de simulação esteja em execução com vazão ativa (cenário torneira/chuveiro)
-  if (!simulationService.isActive()) {
-    simulationService.start('torneira');
-  }
-
-  // Se o banco estiver sem leituras ou com poucas amostras, gera histórico inicial para o gráfico
-  try {
-    const totalLeituras = queryOne<{ count: number }>(`SELECT COUNT(*) as count FROM leituras`)?.count || 0;
-    if (totalLeituras < 10) {
-      const now = Date.now();
-      const tariffM3 = Number(queryOne(`SELECT valor FROM configuracoes WHERE chave = 'tarifa_m3'`)?.valor || 4.50);
-      let cumulative = 12.5;
-
-      for (let i = 15; i >= 1; i--) {
-        const timePoint = new Date(now - i * 3000).toISOString();
-        const flow = Number((4.3 + Math.random() * 0.8).toFixed(2));
-        const deltaSeconds = 3.0;
-        const incrementalLiters = Number(((flow / 60.0) * deltaSeconds).toFixed(3));
-        cumulative += incrementalLiters;
-        const m3Incremental = litersToCubicMeters(incrementalLiters);
-        const custoIncremental = calculateCost(m3Incremental, tariffM3);
-        const m3Total = litersToCubicMeters(cumulative);
-        const custoAcumulado = calculateCost(m3Total, tariffM3);
-
-        run(
-          `INSERT INTO leituras (
-            timestamp, vazao_lmin, litros_incrementais, litros_acumulados,
-            custo_incremental, custo_acumulado, status, origem
-          ) VALUES (?, ?, ?, ?, ?, ?, 'normal', 'simulado')`,
-          [timePoint, flow, incrementalLiters, Number(cumulative.toFixed(2)), custoIncremental, custoAcumulado]
-        );
-      }
-    }
-
-    // Se não houver alertas, insere um exemplo de alerta resolvido no histórico para demonstração
-    const totalAlertas = queryOne<{ count: number }>(`SELECT COUNT(*) as count FROM alertas`)?.count || 0;
-    if (totalAlertas === 0) {
-      const sampleTime = new Date(Date.now() - 3600000).toISOString();
-      const resolvedTime = new Date(Date.now() - 3400000).toISOString();
-      run(
-        `INSERT INTO alertas (timestamp, tipo, severidade, descricao, status, valor_detectado, resolvido_em)
-         VALUES (?, 'VAZAMENTO_CONTINUO', 'media', 'Demonstração: Detecção de fluxo contínuo durante a madrugada', 'resolvido', '1.2 L/min', ?)`,
-        [sampleTime, resolvedTime]
-      );
-    }
-  } catch (err) {
-    console.warn('[DEMO] Aviso ao semear dados iniciais de simulação:', err);
-  }
-
-  // Gera uma sessão segura com papel 'demo'
-  const demoUser = {
-    id: 9999,
-    username: 'Visitante (Demo)',
-    role: 'demo'
-  };
-
-  const token = createSession(demoUser);
-
-  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https' || process.env.NODE_ENV === 'production';
-  res.cookie('sgh_session', token, {
-    httpOnly: true,
-    secure: isHttps,
-    sameSite: isHttps ? 'none' : 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
-  });
-
-  try {
-    run(
-      `INSERT INTO eventos_sistema (timestamp, tipo, mensagem, detalhe) VALUES (?, 'AUTH', 'DEMO_LOGIN', ?)`,
-      [new Date().toISOString(), 'Acesso direto concedido via Modo Demonstração & Simulação']
-    );
-  } catch {}
-
-  res.json({
-    sucesso: true,
-    mensagem: 'Modo Demonstração ativado com sucesso!',
-    usuario: demoUser,
-    token,
-    modoDemo: true,
-    cenario: simulationService.getScenario()
-  });
-});
-
 // Código temporário de recuperação em memória
 let activeRecoveryCode: { codigo: string; expiraEm: number } = {
   codigo: '839204',
@@ -591,10 +501,6 @@ apiRouter.get('/serial/status', (_req: Request, res: Response) => {
  * POST /api/serial/autodetectar — Plug & Play: varre portas USB e conecta automaticamente
  */
 apiRouter.post('/serial/autodetectar', async (_req: Request, res: Response) => {
-  if (simulationService.isActive()) {
-    simulationService.stop();
-  }
-
   const result = await serialService.autoDetectAndConnect();
   res.json({
     sucesso: result.sucesso,
@@ -611,10 +517,6 @@ apiRouter.post('/serial/conectar', (req: Request, res: Response): void => {
   if (!porta || typeof porta !== 'string') {
     res.status(400).json({ sucesso: false, erro: 'Nome da porta serial é obrigatório.' });
     return;
-  }
-
-  if (simulationService.isActive()) {
-    simulationService.stop();
   }
 
   const isCloudHost = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
@@ -715,11 +617,6 @@ apiRouter.post('/telemetria/leitura', (req: Request, res: Response): void => {
     return;
   }
 
-  // Interrompe simulação quando dados de hardware real são recebidos
-  if (simulationService.isActive()) {
-    simulationService.stop();
-  }
-
   const ok = serialService.handleIncomingLine(rawString);
   const statusInfo = serialService.getStatus();
 
@@ -745,33 +642,15 @@ apiRouter.use(requireAuth);
  * GET /api/status — Retorna os dados em tempo real da vazão, consumo, custo e conexão
  */
 apiRouter.get('/status', (req: Request, res: Response) => {
-  const isSimulating = simulationService.isActive();
   const serialStatus = serialService.getStatus();
   const tariffM3 = Number(queryOne(`SELECT valor FROM configuracoes WHERE chave = 'tarifa_m3'`)?.valor || 4.50);
 
-  let currentFlow = 0;
-  let totalLiters = 0;
-  let totalCost = 0;
-  let lastReadingTime: string | null = null;
-  let connectionState = 'desconectado';
-  let sensorHealth = 'desconectado';
-
-  if (isSimulating) {
-    const sim = simulationService.getCurrentStatus();
-    currentFlow = sim.flowLmin;
-    totalLiters = sim.totalLiters;
-    totalCost = sim.totalCostEstimated;
-    lastReadingTime = sim.lastReadingTime;
-    connectionState = 'simulacao';
-    sensorHealth = currentFlow > 30 ? 'atencao' : 'normal';
-  } else {
-    currentFlow = serialStatus.lastFlowLmin;
-    totalLiters = serialStatus.lastTotalLiters;
-    totalCost = serialStatus.totalCostEstimated;
-    lastReadingTime = serialStatus.lastReadingTime;
-    connectionState = serialStatus.connected ? 'conectado' : 'desconectado';
-    sensorHealth = leakDetector.checkSensorHealth(serialStatus.connected);
-  }
+  const currentFlow = serialStatus.lastFlowLmin;
+  const totalLiters = serialStatus.lastTotalLiters;
+  const totalCost = serialStatus.totalCostEstimated;
+  const lastReadingTime = serialStatus.lastReadingTime;
+  const connectionState = serialStatus.connected ? 'conectado' : 'desconectado';
+  const sensorHealth = leakDetector.checkSensorHealth(serialStatus.connected);
 
   // Verifica se há alertas ativos
   const activeAlertsCount = queryOne<{ count: number }>(
@@ -799,17 +678,11 @@ apiRouter.get('/status', (req: Request, res: Response) => {
   }
 
   // Identificação amigável do dispositivo conectado
-  const dispositivoNome = isSimulating
-    ? 'Simulador Hidráulico Ativo'
-    : (serialStatus.dispositivoAtual?.nomeAmigavel || (serialStatus.tipoDetectado === 'arduino' ? 'Arduino Uno / Nano' : (serialStatus.tipoDetectado === 'esp32' ? 'ESP32 DevKit' : `Dispositivo USB (${serialStatus.portPath})`)));
+  const dispositivoNome = serialStatus.dispositivoAtual?.nomeAmigavel || (serialStatus.tipoDetectado === 'arduino' ? 'Arduino Uno / Nano' : (serialStatus.tipoDetectado === 'esp32' ? 'ESP32 DevKit' : (serialStatus.connected ? `Dispositivo USB (${serialStatus.portPath})` : 'Microcontrolador Desconectado')));
 
-  const dispositivoTipo = isSimulating
-    ? 'simulado'
-    : (serialStatus.tipoDetectado !== 'nenhum' ? serialStatus.tipoDetectado : (serialStatus.dispositivoAtual?.tipo || 'generico'));
+  const dispositivoTipo = serialStatus.tipoDetectado !== 'nenhum' ? serialStatus.tipoDetectado : (serialStatus.dispositivoAtual?.tipo || 'generico');
 
-  const dispositivoIcone = isSimulating
-    ? 'simulacao'
-    : (serialStatus.dispositivoAtual?.icone || (serialStatus.tipoDetectado === 'arduino' ? 'arduino' : (serialStatus.tipoDetectado === 'esp32' ? 'esp32' : 'usb')));
+  const dispositivoIcone = serialStatus.dispositivoAtual?.icone || (serialStatus.tipoDetectado === 'arduino' ? 'arduino' : (serialStatus.tipoDetectado === 'esp32' ? 'esp32' : 'usb'));
 
   res.json({
     sucesso: true,
@@ -828,13 +701,11 @@ apiRouter.get('/status', (req: Request, res: Response) => {
       sensor_saude: sensorHealth,
       status_badge: statusBadge,
       alertas_ativos_count: activeAlertsCount,
-      modo_simulacao: isSimulating,
-      cenario_simulacao: simulationService.getScenario(),
       usuario_conectado: req.user?.username,
       dispositivo_nome: dispositivoNome,
       dispositivo_tipo: dispositivoTipo,
       dispositivo_icone: dispositivoIcone,
-      dispositivo_conectado: isSimulating ? true : serialStatus.connected,
+      dispositivo_conectado: serialStatus.connected,
       taxa_transmissao: serialStatus.baudRate,
       dispositivos_detectados_count: serialStatus.dispositivosDisponiveis?.length || 0
     }
@@ -1063,130 +934,7 @@ apiRouter.put('/configuracoes', (req: Request, res: Response): void => {
   });
 });
 
-/**
- * POST /api/simulacao/toggle — Liga ou desliga o modo de simulação
- */
-apiRouter.post('/simulacao/toggle', (_req: Request, res: Response) => {
-  const isRunning = simulationService.toggle();
-  if (isRunning) {
-    serialService.disconnect();
-  }
-  res.json({
-    sucesso: true,
-    simulacaoAtiva: isRunning,
-    cenario: simulationService.getScenario()
-  });
-});
 
-/**
- * POST /api/simulacao/cenario — Define o perfil hidráulico na simulação
- */
-apiRouter.post('/simulacao/cenario', (req: Request, res: Response): void => {
-  const { cenario } = req.body;
-  const validScenarios: SimulationScenario[] = ['repouso', 'torneira', 'chuveiro', 'vazamento_leve', 'ruptura_grave'];
-
-  if (!cenario || !validScenarios.includes(cenario)) {
-    res.status(400).json({
-      sucesso: false,
-      erro: `Cenário inválido. Escolha entre: ${validScenarios.join(', ')}`
-    });
-    return;
-  }
-
-  if (!simulationService.isActive()) {
-    simulationService.start(cenario);
-  } else {
-    simulationService.setScenario(cenario);
-  }
-
-  res.json({
-    sucesso: true,
-    cenarioAtual: cenario,
-    mensagem: `Cenário alterado para: ${cenario}`
-  });
-});
-
-/**
- * POST /api/simulacao/alerta-teste — Dispara um alerta de teste em tempo real para demonstração
- */
-apiRouter.post('/simulacao/alerta-teste', (req: Request, res: Response): void => {
-  const { tipo } = req.body || {};
-  const now = new Date().toISOString();
-
-  let tipoAlerta = 'VAZAMENTO_CONTINUO';
-  let severidade = 'media';
-  let descricao = 'Simulação: Vazamento contínuo persistente detectado pelo algoritmo';
-  let valor = '2.4 L/min';
-
-  if (tipo === 'ruptura') {
-    tipoAlerta = 'RUPTURA_CRITICA';
-    severidade = 'critica';
-    descricao = 'Simulação: Ruptura ou vazão anômala severa (>35 L/min)';
-    valor = '38.2 L/min';
-  } else if (tipo === 'sensor') {
-    tipoAlerta = 'SENSOR_FALHA';
-    severidade = 'baixa';
-    descricao = 'Simulação: Interrupção temporária de sinal de telemetria';
-    valor = '0 L/min';
-  }
-
-  run(
-    `INSERT INTO alertas (timestamp, tipo, severidade, descricao, status, valor_detectado)
-     VALUES (?, ?, ?, ?, 'ativo', ?)`,
-    [now, tipoAlerta, severidade, descricao, valor]
-  );
-
-  res.json({
-    sucesso: true,
-    mensagem: 'Alerta de demonstração disparado com sucesso!',
-    alerta: {
-      timestamp: now,
-      tipo: tipoAlerta,
-      severidade,
-      descricao,
-      valor_detectado: valor,
-      status: 'ativo'
-    }
-  });
-});
-
-/**
- * POST /api/simulacao/pulso — Injeta um pulso rápido de consumo para visualização imediata no gráfico
- */
-apiRouter.post('/simulacao/pulso', (req: Request, res: Response): void => {
-  const { volumeLitros } = req.body || {};
-  const litros = Number(volumeLitros) > 0 ? Number(volumeLitros) : 5.0;
-
-  // Temporariamente acelera a simulação no cenário chuveiro
-  simulationService.setScenario('chuveiro');
-  setTimeout(() => {
-    if (simulationService.getScenario() === 'chuveiro') {
-      simulationService.setScenario('torneira');
-    }
-  }, 6000);
-
-  res.json({
-    sucesso: true,
-    mensagem: `Pulso de consumo de ${litros}L injetado na simulação!`
-  });
-});
-
-/**
- * POST /api/simulacao/resetar-dados — Restaura o consumo simulado para estaca zero
- */
-apiRouter.post('/simulacao/resetar-dados', (_req: Request, res: Response): void => {
-  try {
-    run(`DELETE FROM leituras WHERE origem = 'simulado'`);
-    run(`UPDATE alertas SET status = 'resolvido', resolvido_em = ? WHERE status = 'ativo'`, [new Date().toISOString()]);
-  } catch (err) {
-    console.warn('Erro ao resetar dados de simulação:', err);
-  }
-
-  res.json({
-    sucesso: true,
-    mensagem: 'Dados de simulação resetados com sucesso.'
-  });
-});
 
 /**
  * POST /api/backup — Gera cópia de segurança do banco de dados SQLite

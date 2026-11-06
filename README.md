@@ -136,14 +136,10 @@ Abra seu navegador em:
 **`http://localhost:3000/login.html`** (ou `http://localhost:3000`)
 Insira as credenciais (`admin` / `admin123`) para acessar o painel de monitoramento.
 
-### 14. Ativar o modo de simulação
-Se você estiver sem o ESP32 conectado fisicamente:
-- Na interface web, o banner superior permite alternar os cenários de simulação em tempo real:
-  - **Repouso:** 0 L/min (tubulação sem uso).
-  - **Torneira de Pia:** ~4.5 L/min.
-  - **Chuveiro Residencial:** ~10.5 L/min.
-  - **Vazamento Contínuo:** ~0.85 L/min (aciona alerta após tempo limite).
-  - **Ruptura Grave:** >35 L/min (aciona alerta crítico imediato).
+### 14. Conexão direta com Hardware Real (Web Serial & Wi-Fi)
+O SGH conecta-se diretamente aos microcontroladores físicos:
+- **Cabo USB (Web Serial):** Conecte o Arduino ou ESP32 via USB e clique em "Conectar via Cabo USB" na aba Dispositivos do navegador.
+- **Wi-Fi / Rede Local:** Configure o ESP32 para enviar leituras periódicas via requisições HTTP POST para `/api/telemetria/leitura`.
 
 ### 15. Resolver problemas de conexão serial
 - **Erro de Porta Bloqueada (Access Denied / Busy):** Certifique-se de fechar o Monitor Serial da Arduino IDE ou qualquer outro software que esteja utilizando a mesma porta serial.

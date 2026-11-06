@@ -693,7 +693,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCopyPageEsp32Wifi = document.getElementById('btnCopyPageEsp32Wifi');
   const snippetPageArduino = document.getElementById('snippetPageArduino');
   const snippetPageEsp32Serial = document.getElementById('snippetPageEsp32Serial');
-  const snippetPageEsp32Wifi = document.getElementById('snippetPageEsp32Wifi');
 
   btnCopyPageArduino?.addEventListener('click', async () => {
     const text = snippetPageArduino?.textContent || '';

@@ -7,14 +7,25 @@
   <link rel="stylesheet" href="./css/dashboard.css">
   <!-- Chart.js Carregado Localmente (100% Offline, Sem CDN) -->
   <script src="./vendor/chart.umd.js"></script>
+  <script>
+    (function() {
+      try {
+        var s = localStorage.getItem('sgh_theme');
+        var d = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (s === 'dark' || (!s && d)) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch(e) {}
+    })();
+  </script>
 </head>
 <body>
-  <!-- Cabeçalho Principal -->
+  <!-- Cabeçalho Principal (Ultra-Minimalista, Fundo Branco, Borda 1px) -->
   <header class="app-header">
     <div class="header-container">
       <div class="brand-section">
         <div class="brand-icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
           </svg>
         </div>
@@ -25,7 +36,7 @@
       </div>
 
       <div class="header-status-group">
-        <!-- Status de Conexão com ESP32 -->
+        <!-- Status de Conexão com Microcontrolador (Zero-Pill: Caixa Estruturada) -->
         <div class="status-pill" id="serialStatusPill" title="Estado da comunicação serial USB">
           <span class="status-dot disconnected" id="serialStatusDot"></span>
           <span id="serialStatusText">Verificando...</span>
@@ -34,32 +45,53 @@
         <!-- Relógio Digital em Tempo Real -->
         <div class="clock-display" id="clockDisplay">--:--:--</div>
 
-        <!-- Perfil do Usuário e Ações -->
+        <!-- Perfil do Usuário e Ações Rápidas -->
         <div class="user-profile">
-          <span id="userNameBadge" style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Admin</span>
-          <a href="/dispositivos.html" class="btn-icon" title="Gerenciador de Dispositivos USB (Fora do Dash)" aria-label="Gerenciador de Dispositivos Externo" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <span id="userNameBadge" style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-right: 0.25rem;">Admin</span>
+          
+          <a href="/dispositivos.html" class="btn-icon" title="Gerenciador de Dispositivos USB" aria-label="Gerenciador de Dispositivos">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="4" y="4" width="16" height="16" rx="2"></rect>
               <rect x="9" y="9" width="6" height="6"></rect>
               <line x1="9" y1="1" x2="9" y2="4"></line>
               <line x1="15" y1="1" x2="15" y2="4"></line>
             </svg>
           </a>
-          <button id="btnOpenSettings" class="btn-icon" title="Configurações do Sistema" aria-label="Abrir configurações">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+          <button type="button" id="btnOpenSettings" class="btn-icon" title="Configurações do Sistema" aria-label="Abrir configurações">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </button>
-          <button id="btnBackup" class="btn-icon" title="Fazer Backup SQLite" aria-label="Backup do banco de dados">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+          <button type="button" id="btnBackup" class="btn-icon" title="Fazer Backup SQLite" aria-label="Backup do banco de dados">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
               <polyline points="7 3 7 8 15 8"></polyline>
             </svg>
           </button>
-          <button id="btnLogout" class="btn-icon" title="Sair da Sessão" aria-label="Encerrar sessão">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+          <button type="button" id="btnToggleTheme" class="btn-icon" title="Alternar modo escuro" aria-label="Alternar modo escuro">
+            <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <button type="button" id="btnLogout" class="btn-icon" title="Sair da Sessão" aria-label="Encerrar sessão">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>
               <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -70,65 +102,13 @@
     </div>
   </header>
 
-  <!-- Barra de Modo de Simulação & Demonstração Interativa -->
-  <div id="simulationBanner" class="simulation-banner" style="display: none;">
-    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-      <span class="status-dot connected" style="background-color: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span>
-      <strong style="color: #38bdf8; letter-spacing: 0.03em;">[MODO DEMONSTRAÇÃO ATIVO]</strong>
-      <span class="sim-banner-desc" style="font-size: 0.8rem; color: var(--text-muted);">
-        Telemetria hidráulica gerada em tempo real para testes e apresentação sem hardware físico.
-      </span>
-    </div>
-
-    <div class="simulation-controls" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-      <label for="simScenarioSelect" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main);">Cenário:</label>
-      <select id="simScenarioSelect" class="sim-select" aria-label="Selecione o cenário de simulação">
-        <option value="repouso">Repouso (0 L/min)</option>
-        <option value="torneira">Torneira de Pia (~4.5 L/min)</option>
-        <option value="chuveiro">Chuveiro Residencial (~10.5 L/min)</option>
-        <option value="vazamento_leve">Vazamento Contínuo (~0.85 L/min)</option>
-        <option value="ruptura_grave">Ruptura Grave (>35 L/min)</option>
-      </select>
-
-      <!-- Ações Rápidas de Demonstração -->
-      <button type="button" id="btnSimTestAlert" class="btn-secondary" title="Gera um alerta de vazamento simulado instantâneo" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171; display: inline-flex; align-items: center; gap: 0.3rem;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-        Simular Alerta
-      </button>
-
-      <button type="button" id="btnSimPulse" class="btn-secondary" title="Injeta um pulso rápido de vazão para ver a curva oscilar no gráfico" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(6, 182, 212, 0.5); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.3rem;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-        </svg>
-        Injetar Pulso (+5L)
-      </button>
-
-      <button type="button" id="btnToggleSim" class="btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
-        Pausar Simulação
-      </button>
-
-      <button type="button" id="btnExitDemoMode" class="btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; display: inline-flex; align-items: center; gap: 0.3rem;" title="Encerra a sessão de demonstração e retorna à tela de login">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        Sair da Demo
-      </button>
-    </div>
-  </div>
-
   <main class="dashboard-container">
     <!-- Central de Dispositivo Plug & Play (Arduino & ESP32) -->
     <section class="device-hub-card" id="deviceHubCard" aria-label="Status do Microcontrolador Conectado">
       <div class="device-hub-header">
         <div class="device-hub-identity">
           <div class="device-avatar-icon disconnected" id="deviceAvatarIcon" title="Status do Microcontrolador">
-            <svg id="deviceIconSvg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg id="deviceIconSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="4" y="4" width="16" height="16" rx="2"></rect>
               <rect x="9" y="9" width="6" height="6"></rect>
               <line x1="9" y1="1" x2="9" y2="4"></line>
@@ -144,7 +124,7 @@
           <div>
             <div class="device-hub-title">
               <span id="deviceHubName">Procurando Dispositivo USB...</span>
-              <span class="state-badge badge-normal" id="deviceHubBadge" style="font-size: 0.7rem;">Varrendo...</span>
+              <span class="state-badge badge-normal" id="deviceHubBadge">Varrendo...</span>
             </div>
             <div class="device-hub-meta" id="deviceHubMeta">
               Compatível com Arduino (Uno, Nano, Mega) e ESP32 com Sensor YF-S201
@@ -153,31 +133,39 @@
         </div>
 
         <div class="device-hub-actions">
-          <button id="btnWebSerialDash" class="btn-primary" style="padding: 0.45rem 0.9rem; font-size: 0.8rem; width: auto; font-weight: 600;" title="Conectar diretamente ao microcontrolador pelo cabo USB usando o navegador">
-            🔌 Conectar USB (Web Serial)
-          </button>
-          <button id="btnAutoDetect" class="btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.8rem; width: auto;" title="Varre portas USB e conecta pelo servidor local">
+          <button type="button" id="btnWebSerialDash" class="btn-primary" title="Conectar diretamente ao microcontrolador pelo cabo USB usando o navegador">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+              <line x1="12" y1="1" x2="12" y2="4"></line>
+              <line x1="12" y1="20" x2="12" y2="23"></line>
+            </svg>
+            Conectar USB (Web Serial)
+          </button>
+
+          <button type="button" id="btnAutoDetect" class="btn-secondary" title="Varre portas USB e conecta pelo servidor local">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
             </svg>
             Auto-Detectar
           </button>
-          <button id="btnOpenFirmwareModal" class="btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" title="Ver diagramas de pinos e código pronto para Arduino IDE">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+          <button type="button" id="btnOpenFirmwareModal" class="btn-secondary" title="Ver diagramas de pinos e código pronto para Arduino IDE">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="16 18 22 12 16 6"></polyline>
               <polyline points="8 6 2 12 8 18"></polyline>
             </svg>
             Código & Pinos
           </button>
-          <a href="/dispositivos.html" class="btn-secondary" style="text-decoration: none; padding: 0.45rem 0.85rem; font-size: 0.8rem; border-color: rgba(6, 182, 212, 0.4); color: var(--cyan-primary);" title="Abrir Gerenciador de Dispositivos e Monitor Serial">
-            Monitor Serial & Hardware &rarr;
+
+          <a href="/dispositivos.html" class="btn-secondary" title="Abrir Gerenciador de Dispositivos e Monitor Serial">
+            Monitor Serial &rarr;
           </a>
         </div>
       </div>
 
-      <!-- Barra de Dispositivos USB Conectados com 1-Clique -->
+      <!-- Barra de Dispositivos USB Conectados -->
       <div class="device-chips-bar" id="deviceChipsBar">
-        <span style="color: var(--text-dim); font-size: 0.75rem;">Dispositivos USB Identificados:</span>
+        <span style="color: var(--text-muted); font-size: 0.75rem; font-weight: 500;">Portas USB:</span>
         <div id="deviceChipsContainer" style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
           <span style="color: var(--text-dim); font-size: 0.75rem;">Varrendo portas USB do computador...</span>
         </div>
@@ -191,7 +179,7 @@
         <div class="metric-card-header">
           <span class="metric-label">Vazão Instantânea</span>
           <div class="metric-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
             </svg>
           </div>
@@ -202,16 +190,16 @@
         </div>
         <div class="metric-sub">
           <span class="state-badge badge-normal" id="badgeFlowStatus">Normal</span>
-          <span id="flowPulseIndicator" style="color: var(--cyan-primary); font-size: 0.75rem; margin-left: auto;">Fluxo estável</span>
+          <span id="flowPulseIndicator" style="color: var(--text-muted); font-size: 0.75rem; margin-left: auto;">Fluxo estável</span>
         </div>
       </article>
 
       <!-- Card 2: Consumo de Água -->
       <article class="metric-card" id="cardConsumption">
         <div class="metric-card-header">
-          <span class="metric-label">Consumo de Água</span>
+          <span class="metric-label">Consumo Acumulado</span>
           <div class="metric-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
           </div>
@@ -222,7 +210,7 @@
         </div>
         <div class="metric-sub">
           <span>Equivalente: <strong id="valTotalM3" style="color: var(--text-main);">0.0000 m³</strong></span>
-          <span style="margin-left: auto;">Hoje: <strong id="valTodayLiters" style="color: var(--cyan-primary);">0 L</strong></span>
+          <span style="margin-left: auto;">Hoje: <strong id="valTodayLiters" style="color: var(--text-main);">0 L</strong></span>
         </div>
       </article>
 
@@ -231,19 +219,19 @@
         <div class="metric-card-header">
           <span class="metric-label">Custo Estimado</span>
           <div class="metric-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="1" x2="12" y2="23"></line>
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
             </svg>
           </div>
         </div>
         <div class="metric-value-wrap">
-          <span class="metric-unit" style="font-size: 1.5rem; font-weight: 700; color: var(--cyan-primary);">R$</span>
+          <span class="metric-unit" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">R$</span>
           <span class="metric-number" id="valTotalCost">0,00</span>
         </div>
         <div class="metric-sub">
           <span>Tarifa: <strong id="valTariffApplied">R$ 4,50 / m³</strong></span>
-          <span style="margin-left: auto; font-size: 0.7rem; color: var(--text-dim);" title="Resultado estimado sem tributos adicionais">*Estimativa</span>
+          <span style="margin-left: auto; font-size: 0.7rem; color: var(--text-dim);" title="Resultado estimado sem tributos">*Estimativa</span>
         </div>
       </article>
 
@@ -252,7 +240,7 @@
         <div class="metric-card-header">
           <span class="metric-label">Estado do Sistema</span>
           <div class="metric-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
               <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
               <line x1="6" y1="6" x2="6.01" y2="6"></line>
@@ -261,7 +249,7 @@
           </div>
         </div>
         <div class="metric-value-wrap">
-          <span class="metric-number" style="font-size: 1.6rem;" id="valSerialPortName">USB COM3</span>
+          <span class="metric-number" style="font-size: 1.45rem;" id="valSerialPortName">USB COM3</span>
         </div>
         <div class="metric-sub">
           <span>Sensor: <strong id="valSensorHealth" style="color: var(--success);">Operacional</strong></span>
@@ -274,19 +262,19 @@
     <section class="chart-section" aria-label="Gráfico de Vazão">
       <div class="chart-header">
         <div class="chart-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
           </svg>
-          Monitoramento de Vazão em Tempo Real (L/min)
+          Monitoramento de Vazão Contínua (L/min)
         </div>
         <div class="chart-actions">
           <div style="display: flex; gap: 0.25rem;">
-            <button class="btn-toggle active" data-window="30">30s</button>
-            <button class="btn-toggle" data-window="60">1m</button>
-            <button class="btn-toggle" data-window="300">5m</button>
-            <button class="btn-toggle" data-window="900">15m</button>
+            <button type="button" class="btn-toggle active" data-window="30">30s</button>
+            <button type="button" class="btn-toggle" data-window="60">1m</button>
+            <button type="button" class="btn-toggle" data-window="300">5m</button>
+            <button type="button" class="btn-toggle" data-window="900">15m</button>
           </div>
-          <button id="btnPauseChart" class="btn-secondary" style="font-size: 0.8rem;">Pausar Fluxo</button>
+          <button type="button" id="btnPauseChart" class="btn-secondary" style="font-size: 0.775rem;">Pausar Fluxo</button>
         </div>
       </div>
       <div class="chart-wrapper">
@@ -300,7 +288,7 @@
       <section class="section-box" aria-label="Central de Alertas">
         <div class="section-box-header">
           <div class="section-box-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
               <line x1="12" y1="9" x2="12" y2="13"></line>
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -308,7 +296,7 @@
             Central de Alertas & Diagnóstico de Vazamento
           </div>
           <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <button id="btnResolveAllAlerts" class="btn-secondary" style="font-size: 0.725rem; padding: 0.25rem 0.55rem; display: none;" title="Resolver e limpar todos os alertas">
+            <button type="button" id="btnResolveAllAlerts" class="btn-secondary" style="font-size: 0.725rem; padding: 0.25rem 0.55rem; display: none;" title="Resolver e limpar todos os alertas">
               Limpar Alertas
             </button>
             <span class="state-badge badge-normal" id="badgeActiveAlertsCount">0 Ativos</span>
@@ -316,7 +304,7 @@
         </div>
 
         <div id="alertsContainer" class="alerts-list">
-          <div style="text-align: center; color: var(--text-dim); padding: 2rem 1rem; font-size: 0.85rem;">
+          <div style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem; font-size: 0.85rem;">
             Nenhum alerta ativo no momento. Rede hidráulica operando normalmente.
           </div>
         </div>
@@ -326,7 +314,7 @@
       <section class="section-box" aria-label="Histórico de Consumo">
         <div class="section-box-header">
           <div class="section-box-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
               <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -335,14 +323,14 @@
             </svg>
             Histórico de Consumo
           </div>
-          <div style="display: flex; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.4rem;">
             <select id="historyPeriodSelect" class="sim-select" aria-label="Filtrar período do histórico">
               <option value="hoje">Hoje</option>
               <option value="7dias">Últimos 7 dias</option>
               <option value="todos">Todos os registros</option>
             </select>
-            <button id="btnRefreshHistory" class="btn-secondary" title="Atualizar tabela">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button type="button" id="btnRefreshHistory" class="btn-secondary" title="Atualizar tabela">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
               </svg>
@@ -364,7 +352,7 @@
             </thead>
             <tbody id="historyTableBody">
               <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
                   Carregando registros históricos...
                 </td>
               </tr>
@@ -375,9 +363,9 @@
         <!-- Paginação -->
         <div class="pagination-bar">
           <span id="paginationInfo">Página 1 de 1</span>
-          <div style="display: flex; gap: 0.5rem;">
-            <button id="btnPrevPage" class="btn-secondary" disabled>Anterior</button>
-            <button id="btnNextPage" class="btn-secondary" disabled>Próxima</button>
+          <div style="display: flex; gap: 0.4rem;">
+            <button type="button" id="btnPrevPage" class="btn-secondary" disabled>Anterior</button>
+            <button type="button" id="btnNextPage" class="btn-secondary" disabled>Próxima</button>
           </div>
         </div>
       </section>
@@ -389,7 +377,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 id="settingsModalTitle" class="modal-title">Configurações do SGH</h2>
-        <button id="btnCloseSettings" class="close-modal" aria-label="Fechar configurações">&times;</button>
+        <button type="button" id="btnCloseSettings" class="close-modal" aria-label="Fechar configurações">&times;</button>
       </div>
 
       <form id="settingsForm">
@@ -475,12 +463,12 @@
 
               <div style="display: flex; gap: 0.5rem; align-items: center;">
                 <input type="text" id="cfgPortaSerial" class="form-input" placeholder="Digite a porta manualmente (ex: COM3 ou /dev/ttyUSB0)" required>
-                <button type="button" id="btnTestPortConnection" class="btn-secondary" style="white-space: nowrap; padding: 0.75rem 1rem;" title="Testar e conectar imediatamente a esta porta">
+                <button type="button" id="btnTestPortConnection" class="btn-secondary" style="white-space: nowrap; padding: 0.65rem 0.85rem;" title="Testar e conectar imediatamente a esta porta">
                   Conectar Agora
                 </button>
               </div>
             </div>
-            <div id="portConnectionFeedback" style="margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-dim);">
+            <div id="portConnectionFeedback" style="margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-muted);">
               Selecione na lista ou digite a porta atribuída pelo sistema operacional ao cabo USB do Arduino ou ESP32.
             </div>
           </div>
@@ -488,7 +476,7 @@
 
         <div class="modal-footer">
           <button type="button" id="btnCancelSettings" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-primary" style="width: auto; padding: 0.5rem 1.25rem;">Salvar Configurações</button>
+          <button type="submit" class="btn-primary" style="width: auto;">Salvar Configurações</button>
         </div>
       </form>
     </div>
@@ -499,24 +487,24 @@
     <div class="modal-content wide">
       <div class="modal-header">
         <h2 id="firmwareModalTitle" class="modal-title">Código-Fonte & Esquema de Ligação</h2>
-        <button id="btnCloseFirmwareModal" class="close-modal" aria-label="Fechar guia de firmware">&times;</button>
+        <button type="button" id="btnCloseFirmwareModal" class="close-modal" aria-label="Fechar guia de firmware">&times;</button>
       </div>
 
-      <div class="auth-tabs" style="margin-bottom: 1rem;">
-        <button type="button" id="tabFirmwareArduino" class="auth-tab-btn active">
+      <div class="tabs-nav">
+        <button type="button" id="tabFirmwareArduino" class="tab-btn active">
           Arduino (Uno / Nano / Mega)
         </button>
-        <button type="button" id="tabFirmwareEsp32" class="auth-tab-btn">
+        <button type="button" id="tabFirmwareEsp32" class="tab-btn">
           ESP32 (DevKit / NodeMCU)
         </button>
-        <button type="button" id="tabFirmwareFaq" class="auth-tab-btn">
+        <button type="button" id="tabFirmwareFaq" class="tab-btn">
           Dúvidas & Instalação
         </button>
       </div>
 
       <!-- Painel 1: Arduino -->
       <div id="firmwarePanelArduino">
-        <h3 style="font-size: 0.95rem; font-weight: 600; color: #10b981; margin-bottom: 0.5rem;">
+        <h3 style="font-size: 0.875rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">
           Esquema de Ligação — Arduino Uno / Nano / Mega / Pro Mini
         </h3>
         <div class="wiring-diagram-box">
@@ -530,37 +518,29 @@
           </div>
           <div class="wiring-pin-row">
             <span class="pin-tag pin-yellow">SINAL (Fio Amarelo)</span>
-            <span>&rarr; Conectar ao <strong>Pino Digital 2</strong> (Interrupção de hardware INT0)</span>
+            <span>&rarr; Conectar ao <strong>Pino Digital 2</strong> (Interrupção INT0)</span>
           </div>
-          <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">
-            O código já habilita o resistor interno de pull-up com <code>pinMode(2, INPUT_PULLUP)</code>, eliminando ruídos no sinal Hall.
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">
+            O código habilita o resistor interno de pull-up com <code>pinMode(2, INPUT_PULLUP)</code>.
           </p>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-          <h4 style="font-size: 0.85rem; font-weight: 600;">Código C++ Zero-Erro para Arduino IDE:</h4>
+          <h4 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Código C++ para Arduino IDE:</h4>
           <button type="button" id="btnCopyArduinoCode" class="btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
-            Copiar Código Arduino
+            Copiar Código
           </button>
         </div>
         <pre class="code-snippet-box" id="codeArduinoSnippet"><code>/*
   =============================================================================
   SGH — SISTEMA DE GERENCIAMENTO HIDRÁULICO
-  FIRMWARE OFICIAL ZERO-ERRO PARA ARDUINO (UNO / NANO / MEGA / PRO MINI)
-  =============================================================================
-  Sensor de Fluxo: YF-S201 (Efeito Hall)
-  Pino de Sinal:   Pino Digital 2 (Interrupção INT0)
-  Baud Rate:       115200 bps
-  
-  MÉTODO DE SEGURANÇA:
-  - Cópia atômica via noInterrupts()/interrupts() (sem perda de pulsos)
-  - Flash Strings F() para ZERO fragmentação da memória SRAM (2KB)
-  - Cálculo temporal deltaSeconds exato (imune a pequenas variações de loop)
+  FIRMWARE ZERO-ERRO PARA ARDUINO (UNO / NANO / MEGA)
+  Sensor: YF-S201 (Pino Digital 2) | Taxa: 115200 bps
   =============================================================================
 */
 
 const byte SENSOR_PIN = 2;
-const float CALIBRATION_FACTOR = 7.5; // YF-S201: Freq(Hz) = 7.5 * Q(L/min)
+const float CALIBRATION_FACTOR = 7.5;
 
 volatile unsigned long pulseCounter = 0;
 float flowRateLmin = 0.0;
@@ -586,7 +566,6 @@ void loop() {
   unsigned long currentMillis = millis();
 
   if ((currentMillis - previousMillis) >= 1000) {
-    // Leitura atômica protegida
     noInterrupts();
     unsigned long pulses = pulseCounter;
     pulseCounter = 0;
@@ -595,11 +574,9 @@ void loop() {
     float deltaSeconds = (currentMillis - previousMillis) / 1000.0;
     previousMillis = currentMillis;
 
-    // Cálculo exato da vazão instantânea e volume acumulado
     flowRateLmin = (pulses / deltaSeconds) / CALIBRATION_FACTOR;
     totalLiters += (flowRateLmin / 60.0) * deltaSeconds;
 
-    // Envio direto do payload JSON reconhecido nativamente pelo SGH
     Serial.print(F("{\"vazao_lmin\":"));
     Serial.print(flowRateLmin, 2);
     Serial.print(F(",\"litros_totais\":"));
@@ -611,7 +588,7 @@ void loop() {
 
       <!-- Painel 2: ESP32 -->
       <div id="firmwarePanelEsp32" style="display: none;">
-        <h3 style="font-size: 0.95rem; font-weight: 600; color: #06b6d4; margin-bottom: 0.5rem;">
+        <h3 style="font-size: 0.875rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">
           Esquema de Ligação — ESP32 (DevKit v1 / NodeMCU-32S / ESP32-WROOM)
         </h3>
         <div class="wiring-diagram-box">
@@ -627,30 +604,22 @@ void loop() {
             <span class="pin-tag pin-yellow">SINAL (Fio Amarelo)</span>
             <span>&rarr; Conectar ao <strong>GPIO 4</strong> (ou GPIO 2)</span>
           </div>
-          <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">
-            O pino <strong>GPIO 4</strong> é o recomendado para o ESP32 pois não interfere com o LED de boot nem com portas de strapping.
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">
+            O pino <strong>GPIO 4</strong> é recomendado para o ESP32 por não interferir com bootstrap.
           </p>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-          <h4 style="font-size: 0.85rem; font-weight: 600;">Código C++ Zero-Erro para ESP32 (USB Serial):</h4>
+          <h4 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Código C++ para ESP32 (USB Serial):</h4>
           <button type="button" id="btnCopyEsp32Code" class="btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
-            Copiar Código ESP32
+            Copiar Código
           </button>
         </div>
         <pre class="code-snippet-box" id="codeEsp32Snippet"><code>/*
   =============================================================================
   SGH — SISTEMA DE GERENCIAMENTO HIDRÁULICO
-  FIRMWARE OFICIAL ZERO-ERRO PARA ESP32 (USB SERIAL)
-  =============================================================================
-  Sensor de Fluxo: YF-S201 (Efeito Hall)
-  Pino de Sinal:   GPIO 4 (Recomendado) ou GPIO 2
-  Baud Rate:       115200 bps
-  
-  MÉTODO DE SEGURANÇA:
-  - ISR alocada em memória rápida IRAM (IRAM_ATTR) sem quedas por cache flash
-  - PortMUX critical section atômica para integridade absoluta dos pulsos
-  - Saída JSON validada para o conector USB e Web Serial do SGH
+  FIRMWARE ZERO-ERRO PARA ESP32 (USB SERIAL)
+  Sensor: YF-S201 (GPIO 4) | Taxa: 115200 bps
   =============================================================================
 */
 
@@ -680,7 +649,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(SENSOR_PIN), isrFlowPulse, FALLING);
   lastCalcTime = millis();
 
-  Serial.println(F("\n[SGH] ESP32 Serial Inicializado. Conecte ao SGH a 115200 bps."));
+  Serial.println(F("\n[SGH] ESP32 Serial Inicializado a 115200 bps."));
 }
 
 void loop() {
@@ -706,70 +675,48 @@ void loop() {
 
       <!-- Painel 3: Dúvidas & Instalação do Microcontrolador -->
       <div id="firmwarePanelFaq" style="display: none;">
-        <h3 style="font-size: 0.95rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.75rem;">
+        <h3 style="font-size: 0.875rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.75rem;">
           Guia de Instalação & Resolução de Dúvidas Técnicas
         </h3>
 
-        <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.825rem; line-height: 1.5;">
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.8rem; line-height: 1.5;">
           <!-- Item 1: Conflito de Porta USB -->
-          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 0.85rem;">
-            <strong style="color: #fca5a5; display: flex; align-items: center; gap: 0.4rem;">
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem;">
+            <strong style="color: var(--text-main); display: block; margin-bottom: 0.25rem;">
               1. Por que o site não conecta se o Monitor Serial da Arduino IDE estiver aberto?
             </strong>
-            <p style="margin: 0.4rem 0 0; color: #fecaca;">
-              Os sistemas operacionais (Windows, Linux e macOS) concedem posse <strong>exclusiva</strong> à porta USB (COM3, /dev/ttyUSB0). Se a janela do Serial Monitor da Arduino IDE estiver aberta lendo os dados, o navegador será impedido pelo SO de abrir a porta. <strong>Solução:</strong> Feche a janela do Monitor Serial na Arduino IDE antes de clicar no botão Conectar.
+            <p style="color: var(--text-secondary); margin: 0;">
+              Sistemas operacionais concedem posse <strong>exclusiva</strong> à porta USB. Se o Monitor Serial da Arduino IDE estiver aberto, o navegador é impedido de acessá-la. Feche o Monitor Serial antes de conectar no SGH.
             </p>
           </div>
 
           <!-- Item 2: Sentido do Fluxo -->
-          <div style="background: rgba(14, 116, 144, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; padding: 0.85rem;">
-            <strong style="color: var(--cyan-primary);">
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem;">
+            <strong style="color: var(--text-main); display: block; margin-bottom: 0.25rem;">
               2. Como posicionar o sensor de fluxo YF-S201 no encanamento?
             </strong>
-            <p style="margin: 0.4rem 0 0; color: var(--text-muted);">
-              O corpo plástico preto do sensor YF-S201 possui uma <strong>seta em alto-relevo</strong> indicando a direção correta do fluxo de água. A água DEVE entrar pelo lado indicado e sair pelo outro. Se for montado ao contrário, a turbina magnética interna gerará turbulência irregular e o sensor medirá 0 L/min.
+            <p style="color: var(--text-secondary); margin: 0;">
+              O corpo do sensor possui uma <strong>seta indicando a direção do fluxo</strong>. A água deve entrar pelo lado indicado e sair pelo oposto para correta rotação da turbina magnética.
             </p>
           </div>
 
           <!-- Item 3: Resistor de Pull-Up -->
-          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.85rem;">
-            <strong style="color: #6ee7b7;">
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem;">
+            <strong style="color: var(--text-main); display: block; margin-bottom: 0.25rem;">
               3. É necessário colocar resistor de pull-up externo na bancada?
             </strong>
-            <p style="margin: 0.4rem 0 0; color: var(--text-muted);">
-              <strong>Não para a maioria das instalações!</strong> Nossos códigos oficiais configuram o pino de leitura com <code>pinMode(SENSOR_PIN, INPUT_PULLUP)</code>, ativando o resistor interno de pull-up do Arduino e do ESP32. Só é recomendado um resistor físico externo de 4.7kΩ a 10kΩ caso o fio entre o sensor e a placa tenha mais de 3 metros de distância.
+            <p style="color: var(--text-secondary); margin: 0;">
+              Geralmente não. Os firmwares ativam o resistor interno com <code>pinMode(SENSOR_PIN, INPUT_PULLUP)</code>. Apenas cabos muito longos (>3m) podem requerer resistor físico externo de 4.7kΩ.
             </p>
           </div>
 
           <!-- Item 4: Drivers CH340 / CP2102 -->
-          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.85rem;">
-            <strong style="color: #fde68a;">
-              4. O computador não reconhece a placa USB ou dá "Dispositivo Desconhecido"?
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem;">
+            <strong style="color: var(--text-main); display: block; margin-bottom: 0.25rem;">
+              4. O computador não reconhece a placa USB?
             </strong>
-            <p style="margin: 0.4rem 0 0; color: var(--text-muted);">
-              A maioria das placas Arduino e ESP32 utiliza conversores USB-Serial como o <strong>CH340</strong> ou <strong>Silicon Labs CP2102</strong>. Se a porta COM não aparecer no Gerenciador de Dispositivos do Windows, instale o driver oficial do chip da sua placa. Verifique também se o cabo USB utilizado suporta transferência de dados (cabos baratos que só carregam celular não possuem linhas de dados D+/D-).
-            </p>
-          </div>
-
-          <!-- Item 5: Arduino IDE Configurações -->
-          <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem;">
-            <strong style="color: var(--text-main);">
-              5. Qual placa e velocidade configurar na Arduino IDE?
-            </strong>
-            <ul style="margin: 0.4rem 0 0 1.2rem; padding: 0; color: var(--text-muted);">
-              <li><strong>Arduino Uno:</strong> Ferramentas &rarr; Placa: "Arduino Uno" &bull; Programador: "AVRISP mkII".</li>
-              <li><strong>ESP32:</strong> Ferramentas &rarr; Placa: "ESP32 Dev Module" &bull; Upload Speed: 921600 &bull; Flash Frequency: 80MHz.</li>
-              <li><strong>Taxa Baud:</strong> Sempre compile e grave com <strong>115200 bps</strong> para compatibilidade direta com o SGH.</li>
-            </ul>
-          </div>
-
-          <!-- Item 6: Vercel / Servidor na Nuvem vs USB Local -->
-          <div style="background: rgba(14, 116, 144, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); border-radius: 8px; padding: 0.85rem;">
-            <strong style="color: #38bdf8;">
-              6. Por que na Vercel o "Auto-Detectar" não acha minha porta USB COM3?
-            </strong>
-            <p style="margin: 0.4rem 0 0; color: var(--text-muted);">
-              Quando o SGH está hospedado na Vercel ou na nuvem, o backend roda nos servidores remotos da AWS/Vercel que não têm acesso físico à porta USB do seu computador. Para conectar seu microcontrolador com o site na Vercel, utilize a opção <strong>"Conectar USB (Web Serial)"</strong> no topo da tela (disponível no Chrome e Edge), que lê a porta COM direto pelo seu navegador e sincroniza com o site. No caso do ESP32, você também pode usar o firmware Wi-Fi para transmitir telemetria sem cabo.
+            <p style="color: var(--text-secondary); margin: 0;">
+              Instale o driver do chip serial da placa (CH340 ou Silicon Labs CP2102) e certifique-se de que o cabo USB transfere dados (não apenas alimentação).
             </p>
           </div>
         </div>
@@ -781,6 +728,7 @@ void loop() {
     </div>
   </div>
 
+  <script type="module" src="./js/theme.js"></script>
   <script type="module" src="./js/dashboard.js"></script>
 </body>
 </html>

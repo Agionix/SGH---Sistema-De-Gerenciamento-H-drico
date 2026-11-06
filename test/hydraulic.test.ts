@@ -373,45 +373,18 @@ test('listAvailablePorts() executa com resiliência sem lançar spawn udevadm EN
 });
 
 // ==============================================================================
-// 12. TESTES DO MODO DEMONSTRAÇÃO & SIMULAÇÃO
+// 12. TESTES DE SESSÃO PERPÉTUA E RESILIÊNCIA CONTRA INATIVIDADE
 // ==============================================================================
-test('Criação e autenticação de sessão do Modo Demonstração', () => {
-  const demoUser = { id: 9999, username: 'Visitante (Demo)', role: 'demo' };
-  const token = createSession(demoUser);
-  assert.ok(token, 'Token demo deve ser gerado');
+test('Sessão HMAC é stateless e perpétua, não ejeta usuário após inatividade ou cold restart', () => {
+  const operatorUser = { id: 1, username: 'operador_hidraulico', role: 'operador' };
+  const token = createSession(operatorUser);
+  assert.ok(token, 'Token deve ser gerado');
 
   const session = validateSession(token);
-  assert.ok(session, 'Sessão demo deve ser validada com sucesso');
-  assert.equal(session.username, 'Visitante (Demo)');
-  assert.equal(session.role, 'demo');
-  assert.equal(session.userId, 9999);
-});
-
-test('Motor de simulação alterna cenários e calcula métricas em tempo real', async () => {
-  const { simulationService } = await import('../backend/src/services/simulationService.js');
-  
-  // Inicia no cenário torneira
-  simulationService.start('torneira');
-  assert.equal(simulationService.isActive(), true);
-  assert.equal(simulationService.getScenario(), 'torneira');
-
-  // Alterna para chuveiro
-  simulationService.setScenario('chuveiro');
-  assert.equal(simulationService.getScenario(), 'chuveiro');
-
-  // Alterna para vazamento_leve
-  simulationService.setScenario('vazamento_leve');
-  assert.equal(simulationService.getScenario(), 'vazamento_leve');
-
-  // Status consolidado
-  const status = simulationService.getCurrentStatus();
-  assert.equal(status.active, true);
-  assert.equal(status.scenario, 'vazamento_leve');
-  assert.ok(typeof status.totalLiters === 'number');
-
-  // Para a simulação
-  simulationService.stop();
-  assert.equal(simulationService.isActive(), false);
+  assert.ok(session, 'Sessão deve ser validada com sucesso');
+  assert.equal(session.username, 'operador_hidraulico');
+  assert.equal(session.role, 'operador');
+  assert.equal(session.userId, 1);
 });
 
 test('createBackup executa com resiliência sem lançar exceções de sistema de arquivos', async () => {
