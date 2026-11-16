@@ -63,6 +63,7 @@
 
   /* Fontes Limpas */
   --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 /* ==============================================================================
@@ -276,7 +277,7 @@ button, input, select, textarea {
 }
 
 .btn-secondary:active:not(:disabled) {
-  background-color: #e2e8f0;
+  background-color: var(--border-color);
   transform: translateY(1px);
 }
 
@@ -482,6 +483,7 @@ button, input, select, textarea {
 }
 
 .login-card {
+  position: relative;
   width: 100%;
   max-width: 400px;
   background-color: var(--bg-surface);
@@ -489,6 +491,28 @@ button, input, select, textarea {
   border-radius: var(--radius-lg);
   padding: 2.25rem;
   box-shadow: var(--shadow-card);
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 1.15rem;
+  right: 1.15rem;
+}
+
+.sgh-logo-img {
+  display: block;
+  object-fit: contain;
+  transition: filter var(--transition-fast);
+}
+
+[data-theme="dark"] .sgh-logo-img {
+  filter: invert(1) brightness(1.08);
+}
+
+.login-logo-img {
+  height: 92px;
+  width: auto;
+  margin-bottom: 0.9rem;
 }
 
 .login-header {
@@ -628,6 +652,18 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.brand-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-logo-img {
+  height: 38px;
+  width: auto;
 }
 
 .brand-icon {

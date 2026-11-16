@@ -29,9 +29,11 @@ async function bootstrap() {
   // Rota de API REST
   app.use('/api', apiRouter);
 
-  // Serve arquivos estáticos da pasta frontend diretamente
+  // Serve arquivos estáticos das pastas frontend e public diretamente
   const frontendDir = path.resolve(process.cwd(), 'frontend');
+  const publicDir = path.resolve(process.cwd(), 'public');
   app.use(express.static(frontendDir));
+  app.use(express.static(publicDir));
 
   // Redirecionamento da raiz para a tela de login
   app.get('/', (_req, res) => {

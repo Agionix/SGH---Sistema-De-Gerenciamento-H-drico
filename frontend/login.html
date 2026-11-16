@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SGH — Autenticação</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/aistudio/SGH_LOGO_0f3cc3b4.svg">
   <link rel="stylesheet" href="./css/login.css">
   <script>
     (function() {
@@ -20,27 +21,26 @@
 <body>
   <div class="login-container">
     <div class="login-card">
-      <!-- Barra Superior com Alternador de Modo Escuro -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
-        <button type="button" id="btnToggleTheme" class="btn-icon" title="Alternar modo escuro" aria-label="Alternar modo escuro">
-          <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-          <svg class="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        </button>
-      </div>
+      <!-- Alternador de Modo Escuro (Canto Superior Direito) -->
+      <button type="button" id="btnToggleTheme" class="btn-icon login-theme-toggle" title="Alternar modo escuro" aria-label="Alternar modo escuro">
+        <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
 
       <div class="login-header">
+        <img src="/assets/aistudio/SGH_LOGO_0f3cc3b4.svg" alt="Logo SGH — Sistema de Gerenciamento Hidráulico" class="sgh-logo-img login-logo-img">
         <h1 class="login-title" id="authTitle">Login</h1>
         <p class="login-subtitle" id="authSubtitle">Sistema de Gerenciamento Hidráulico</p>
       </div>
