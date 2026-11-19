@@ -67,10 +67,11 @@ class WebSerialManager {
       return { sucesso: true, portInfo };
     } catch (err) {
       console.error('[WebSerial] Erro ao conectar:', err);
-      let friendlyError = err.message || 'Falha ao conectar à porta serial.';
-
-      const errStr = String(err).toLowerCase();
-      const errName = err.name || '';
+      const rawMsg = err?.message || '';
+      const errName = err?.name || '';
+      const errStr = `${errName} ${rawMsg}`.toLowerCase();
+      const techDetail = rawMsg ? ` (${errName ? `${errName}: ` : ''}${rawMsg})` : (errName ? ` (${errName})` : '');
+      let friendlyError = rawMsg || 'Falha ao conectar à porta serial.';
 
       if (
         errName === 'SecurityError' ||
@@ -79,7 +80,9 @@ class WebSerialManager {
         errStr.includes('disallowed') ||
         errStr.includes('feature')
       ) {
-        friendlyError = 'O navegador bloqueou o USB porque a página está dentro de uma janela embutida (iframe). Clique no botão "Abrir em Nova Aba" para usar a porta USB com permissão total no Chrome/Edge.';
+        friendlyError = `O navegador bloqueou o USB porque a página está dentro de uma janela embutida (iframe). Clique em "Abrir em Nova Aba" para usar a porta USB com permissão total.${techDetail}`;
+      } else if (errName === 'InvalidStateError' || errStr.includes('already open')) {
+        friendlyError = `Esta porta USB já está aberta em outra conexão ou aba do navegador. Feche a outra aba ou desconecte antes de tentar novamente.${techDetail}`;
       } else if (
         errName === 'NetworkError' ||
         errStr.includes('failed to open') ||
@@ -87,11 +90,14 @@ class WebSerialManager {
         errStr.includes('denied') ||
         errStr.includes('access')
       ) {
-        friendlyError = 'A porta USB não pôde ser aberta pelo navegador. Verifique se o cabo USB está bem conectado, se os drivers (CP2102/CH340) estão instalados e se nenhum outro aplicativo no Windows/Linux está bloqueando a porta.';
+        friendlyError = `A porta USB não pôde ser aberta pelo navegador. Verifique se o cabo USB está bem conectado, se os drivers (CP2102/CH340) estão instalados e se nenhum outro aplicativo (ex: Monitor Serial da Arduino IDE) está usando a porta.${techDetail}`;
       } else if (errName === 'NotFoundError') {
         friendlyError = 'Nenhum dispositivo USB selecionado na lista do navegador.';
+      } else {
+        friendlyError = `Falha ao abrir a porta USB.${techDetail}`;
       }
 
+      this.port = null;
       this.notifyStatus(false, null, friendlyError);
       throw new Error(friendlyError);
     }

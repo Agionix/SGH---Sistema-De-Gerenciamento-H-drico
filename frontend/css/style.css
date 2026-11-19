@@ -161,10 +161,26 @@
 }
 
 [data-theme="dark"] .tab-btn.active,
-[data-theme="dark"] .mode-tab-btn.active {
+[data-theme="dark"] .mode-tab-btn.active,
+[data-theme="dark"] .btn-toggle.active,
+[data-theme="dark"] .btn-secondary.active {
   background-color: #f8fafc;
   color: #090d16;
   border-color: #f8fafc;
+}
+
+[data-theme="dark"] .alert-item.critica {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+[data-theme="dark"] .alert-item.alta {
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+[data-theme="dark"] .pin-black {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
 }
 
 
